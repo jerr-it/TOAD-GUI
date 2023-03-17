@@ -10,6 +10,7 @@ import threading
 import queue
 import torch
 import math
+import sys
 
 from utils.scrollable_image import ScrollableImage
 from utils.tooltip import Tooltip
@@ -272,7 +273,7 @@ def TOAD_GUI():
                                           stroke_width=-1, stroke_fill=(0, 0, 0))
                 for x in range(level_obj.oh_level.shape[-1]):
                     l_draw.multiline_text((6+x*16, 0), "".join(["%s\n" % c for c in str(x)]), (255, 255, 255),
-                                          stroke_width=-1, stroke_fill=(0, 0, 0), direction='ttb', spacing=0,
+                                          stroke_width=-1, stroke_fill=(0, 0, 0), spacing=0,
                                           align='right')
                 # Add bounding box rectangle
                 l_draw.rectangle(rectangle, outline=(255, 0, 0), width=2)

@@ -1,4 +1,4 @@
-Pillow>=7.1.2
-py4j>=0.10.9
-numpy>=1.18.5
-torch===1.5.0+cpu
+numpy==1.24.1
+Pillow==9.4.0
+py4j==0.10.9.7
+torch==1.13.1
