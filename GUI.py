@@ -12,6 +12,7 @@ import torch
 import math
 import sys
 
+import patching
 from utils.scrollable_image import ScrollableImage
 from utils.tooltip import Tooltip
 from utils.level_utils import read_level_from_file, one_hot_to_ascii_level, place_a_mario_token, ascii_to_one_hot_level
@@ -528,6 +529,7 @@ def TOAD_GUI():
     bbox_y2 = IntVar()
     edit_scale = IntVar()
     scale_info = StringVar()
+    dropdown_value = StringVar()
 
     # Set values
     editmode.set(False)
@@ -555,6 +557,20 @@ def TOAD_GUI():
 
     # Edit mode frame
     emode_frame = ttk.LabelFrame(p_c_frame, text="Edit mode controls", padding=(5, 5, 5, 5))
+
+    # Correction frame
+    repair_frame = ttk.LabelFrame(emode_frame, text="Repair", padding=(5, 5, 5, 5))
+    detect_hint_label = ttk.Label(repair_frame, text="Click to detect unplayable parts")
+    detect_button = ttk.Button(repair_frame, text="Detect")
+
+    patcher_explain_label = ttk.Label(repair_frame, text="Method to apply to unplayable part")
+    keys: list[str] = list(patching.patchers.keys())
+    dropdown_value.set(keys[0])
+    patcher_dropdown = ttk.OptionMenu(repair_frame, dropdown_value, keys[0], *keys)
+    patcher_dropdown.config(width=20)
+
+    patcher_apply_button = ttk.Button(repair_frame, text="Apply")
+
     # Bounding Box frame
     bbox_frame = ttk.LabelFrame(emode_frame, text="Bounding Box", padding=(5, 5, 5, 5))
 
@@ -611,8 +627,8 @@ def TOAD_GUI():
     resample_button = ttk.Button(emode_frame, text="Resample", state='disabled',
                                  command=lambda: spawn_thread(q, re_sample))
     sample_info = ttk.Label(emode_frame, text=# "Right click to edit Tokens directly.\n"
-                                              "Resampling will regenerate the level,\n"
-                                              "so prior Token edits will be lost.")
+    "Resampling will regenerate the level,\n"
+    "so prior Token edits will be lost.")
 
     # TOAD-GAN resample function
     def re_sample():
@@ -657,13 +673,21 @@ def TOAD_GUI():
 
             # On emode_frame:
             bbox_frame.grid(column=0, row=0, columnspan=1, sticky=(E, W), padx=5, pady=5)
-            resample_button.grid(column=0, row=5, columnspan=3, sticky=(N, S, E, W), padx=5, pady=5)
+            resample_button.grid(column=0, row=5, columnspan=3, sticky=(N, S, W), padx=5, pady=5)
             sample_info.grid(column=0, row=4, columnspan=3, sticky=(N, S), padx=5, pady=5)
-            sc_frame.grid(column=1, row=0, columnspan=5, sticky=(N, S, E, W), padx=5, pady=5)
-            sc_label.grid(column=0, row=0, columnspan=1, sticky=(N, S, E), padx=1, pady=5)
+            sc_frame.grid(column=1, row=0, columnspan=5, sticky=(N, S, W), padx=5, pady=5)
+            sc_label.grid(column=0, row=0, columnspan=1, sticky=(N, S, W), padx=1, pady=5)
             sc_entry.grid(column=1, row=0, columnspan=1, sticky=(N, S, W), padx=1, pady=5)
-            sc_info_label.grid(column=0, row=1, columnspan=2, sticky=(N, S, E, W), padx=1, pady=5)
-            sc_noise_image.grid(column=0, row=2, columnspan=2, sticky=(N, S), padx=1, pady=5)
+            sc_info_label.grid(column=0, row=1, columnspan=2, sticky=(N, S, W), padx=1, pady=5)
+            sc_noise_image.grid(column=0, row=2, columnspan=2, sticky=(N, W), padx=1, pady=5)
+
+            # On corrections_frame:
+            repair_frame.grid(column=3, row=0, columnspan=5, sticky=(N, S, E), padx=(50, 10), pady=5)
+            detect_hint_label.grid(column=0, row=0, columnspan=1, sticky=(N, W), padx=1, pady=5)
+            detect_button.grid(column=0, row=1, columnspan=1, sticky=(N, W), padx=1, pady=5)
+            patcher_explain_label.grid(column=0, row=2, sticky=(N, W), padx=1, pady=5)
+            patcher_dropdown.grid(column=0, row=3, sticky=(N, W), padx=1, pady=5)
+            patcher_apply_button.grid(column=1, row=3, sticky=(N, W), padx=1, pady=5)
 
             # On bbox_frame:
             x1_label.grid(column=0, row=0, sticky=(N, S, E), padx=1, pady=1)
