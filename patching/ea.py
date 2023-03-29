@@ -5,5 +5,5 @@ class EAPatcher(Patcher):
     """
     This patcher uses an evolutionary algorithm to fix broken level sections
     """
-    def patch(self, level, broken_spot, output):
+    def patch(self, level: list[str], broken_spot) -> list[str]:
         pass
