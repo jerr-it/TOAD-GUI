@@ -339,7 +339,6 @@ def TOAD_GUI():
         use_gen.set(remember_use_gen)  # only set use_gen to True if it was previously
         return
 
-    @threaded
     def evaluate_level(level) -> float:
         """
             Py4j Java bridge uses Mario AI Framework to check if the level is playable
@@ -351,10 +350,11 @@ def TOAD_GUI():
                                              redirect_stderr=sys.stderr)
 
         game = gateway.jvm.engine.core.MarioGame()
-        game.initVisuals(2.0)
-
         agent = gateway.jvm.agents.robinBaumgarten.Agent()
-        result = game.runGame(agent, level, 200)
+
+        # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
+        #  unplayable level is not a good solution
+        result = game.runGame(agent, level, 10)
         progress = result.getCompletionPercentage()
 
         gateway.java_process.kill()
@@ -598,7 +598,7 @@ def TOAD_GUI():
     # Correction frame
     repair_frame = ttk.LabelFrame(emode_frame, text="Repair", padding=(5, 5, 5, 5))
     detect_hint_label = ttk.Label(repair_frame, text="Click to detect unplayable parts")
-    detect_button = ttk.Button(repair_frame, text="Detect")
+    detect_button = ttk.Button(repair_frame, text="Detect", command=lambda: print(evaluate_level(''.join(level_obj.ascii_level))))
 
     patcher_explain_label = ttk.Label(repair_frame, text="Method to apply to unplayable part")
     keys: list[str] = list(patching.patchers.keys())
