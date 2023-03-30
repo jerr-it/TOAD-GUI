@@ -25,6 +25,7 @@ MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework
 # Check if windows user
 if platform.system() == "Windows":
     import ctypes
+
     # Set Taskbar Icon
     my_appid = u'toad-gui.1.0'
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(my_appid)
@@ -72,6 +73,13 @@ def TOAD_GUI():
         thread = ThreadedClient(que, fcn)
         thread.start()
         periodic_call(thread)
+
+    def threaded(fn):
+        # This decorator runs a function in a separate thread using ThreadedClient
+        def wrapper(*args, **kwargs):
+            spawn_thread(q, lambda: fn(*args, **kwargs))
+
+        return wrapper
 
     def periodic_call(thread):
         if thread.is_alive():
@@ -126,6 +134,7 @@ def TOAD_GUI():
     is_loaded.set(False)
 
     # ---------------------------------------- Define Callbacks ----------------------------------------
+    @threaded
     def load_level():
         fname = fd.askopenfilename(title='Load Level', initialdir=os.path.join(os.curdir, 'levels'),
                                    filetypes=[("level .txt files", "*.txt")])
@@ -173,6 +182,7 @@ def TOAD_GUI():
             error_msg.set("No level file selected.")
         return
 
+    @threaded
     def load_generator():
         fname = fd.askdirectory(title='Load Generator Directory', initialdir=os.path.join(os.curdir, 'generators'))
 
@@ -207,6 +217,7 @@ def TOAD_GUI():
 
         return
 
+    @threaded
     def save_txt():
         save_name = fd.asksaveasfile(title='Save level (.txt/.png)', initialdir=os.path.join(os.curdir, "levels"),
                                      mode='w', defaultextension=".txt",
@@ -223,6 +234,7 @@ def TOAD_GUI():
             error_msg.set("Could not save level with this extension. Supported: .txt, .png")
         return
 
+    @threaded
     def generate():
         if toadgan_obj.Gs is None:
             error_msg.set("Generator did not load correctly. Are all necessary files in the folder?")
@@ -270,10 +282,10 @@ def TOAD_GUI():
                 # Add numbers to rows and cols
                 l_draw = ImageDraw.Draw(pil_img)
                 for y in range(level_obj.oh_level.shape[-2]):
-                    l_draw.multiline_text((1, 4+y*16), str(y), (255, 255, 255),
+                    l_draw.multiline_text((1, 4 + y * 16), str(y), (255, 255, 255),
                                           stroke_width=-1, stroke_fill=(0, 0, 0))
                 for x in range(level_obj.oh_level.shape[-1]):
-                    l_draw.multiline_text((6+x*16, 0), "".join(["%s\n" % c for c in str(x)]), (255, 255, 255),
+                    l_draw.multiline_text((6 + x * 16, 0), "".join(["%s\n" % c for c in str(x)]), (255, 255, 255),
                                           stroke_width=-1, stroke_fill=(0, 0, 0), spacing=0,
                                           align='right')
                 # Add bounding box rectangle
@@ -284,7 +296,7 @@ def TOAD_GUI():
                 if n_pads > 0:  # if scale is chosen too big, this just does not render
                     padding_effect = 3 * n_pads
                     sc = level_obj.scales[scale].shape[-1] / level_obj.oh_level.shape[-1]
-                    scaling_effect = math.ceil((1/sc - 1) / 2)  # affected tokens in every direction
+                    scaling_effect = math.ceil((1 / sc - 1) / 2)  # affected tokens in every direction
                     aoe = (padding_effect + scaling_effect) * 16
                     affected_rect = [(rectangle[0][0] - aoe, rectangle[0][1] - aoe),
                                      (rectangle[1][0] + aoe, rectangle[1][1] + aoe)]
@@ -296,13 +308,15 @@ def TOAD_GUI():
             level_obj.image = img
             image_label.change_image(level_obj.image)
 
+    @threaded
     def play_level():
         error_msg.set("Playing level...")
         is_loaded.set(False)
         remember_use_gen = use_gen.get()
         use_gen.set(False)
         # Py4j Java bridge uses Mario AI Framework
-        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout, redirect_stderr=sys.stderr)
+        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout,
+                                             redirect_stderr=sys.stderr)
         game = gateway.jvm.engine.core.MarioGame()
         try:
             game.initVisuals(2.0)
@@ -325,6 +339,7 @@ def TOAD_GUI():
         use_gen.set(remember_use_gen)  # only set use_gen to True if it was previously
         return
 
+    @threaded
     def evaluate_level(level) -> float:
         """
             Py4j Java bridge uses Mario AI Framework to check if the level is playable
@@ -332,7 +347,8 @@ def TOAD_GUI():
             :param level: list of strings, each string is a line of the level
             :return: float, the completion percentage of the level
         """
-        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout, redirect_stderr=sys.stderr)
+        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout,
+                                             redirect_stderr=sys.stderr)
 
         game = gateway.jvm.engine.core.MarioGame()
         game.initVisuals(2.0)
@@ -359,13 +375,13 @@ def TOAD_GUI():
 
     # Top Buttons
     load_lev_button = ttk.Button(settings, compound='top', image=load_level_icon, width=35,
-                                 text='Open Level', command=lambda: spawn_thread(q, load_level))
+                                 text='Open Level', command=load_level)
     load_gen_button = ttk.Button(settings, compound='top', image=load_generator_icon, width=35,
-                                 text='Open Generator', command=lambda: spawn_thread(q, load_generator))
+                                 text='Open Generator', command=load_generator)
     save_button = ttk.Button(settings, compound='top', image=save_level_icon,
-                             text='Save Level/Image', state='disabled', command=lambda: spawn_thread(q, save_txt))
+                             text='Save Level/Image', state='disabled', command=save_txt)
     gen_button = ttk.Button(settings, compound='top', image=generate_level_icon,
-                            text='Generate level', state='disabled', command=lambda: spawn_thread(q, generate))
+                            text='Generate level', state='disabled', command=generate)
 
     # Size Entries
     size_frame = ttk.Frame(settings, padding=(1, 1, 1, 1))
@@ -408,7 +424,7 @@ def TOAD_GUI():
     # Play and Controls frame
     p_c_frame = ttk.Frame(settings)
     play_button = ttk.Button(p_c_frame, compound='top', image=play_level_icon, text='Play level',
-                             state='disabled', command=lambda: spawn_thread(q, play_level))
+                             state='disabled', command=play_level)
 
     # Level Preview image
     image_label = ScrollableImage(settings, image=levelimage, height=271)
@@ -609,7 +625,7 @@ def TOAD_GUI():
                      "influenced by a change in this scale."
 
     x1_tooltip = Tooltip(x1_label, text=bbox_tt_string, wraplength=250, bg="white", enabled=False)
-    x2_tooltip = Tooltip(x2_label, text=bbox_tt_string,  wraplength=250, bg="white", enabled=False)
+    x2_tooltip = Tooltip(x2_label, text=bbox_tt_string, wraplength=250, bg="white", enabled=False)
     y1_tooltip = Tooltip(y1_label, text=bbox_tt_string, wraplength=250, bg="white", enabled=False)
     y2_tooltip = Tooltip(y2_label, text=bbox_tt_string, wraplength=250, bg="white", enabled=False)
 
@@ -644,14 +660,8 @@ def TOAD_GUI():
     y2_entry.configure(validatecommand=vcmd_y2)
     sc_entry.configure(validatecommand=vcmd_sc)
 
-    # Resample Button and info
-    resample_button = ttk.Button(emode_frame, text="Resample", state='disabled',
-                                 command=lambda: spawn_thread(q, re_sample))
-    sample_info = ttk.Label(emode_frame, text=# "Right click to edit Tokens directly.\n"
-    "Resampling will regenerate the level,\n"
-    "so prior Token edits will be lost.")
-
     # TOAD-GAN resample function
+    @threaded
     def re_sample():
         if not level_obj.scales:
             error_msg.set("Can't resample loaded level.")  # should not be reachable
@@ -682,6 +692,12 @@ def TOAD_GUI():
             redraw_image(scale=edit_scale.get())
 
             is_loaded.set(True)
+
+    # Resample Button and info
+    resample_button = ttk.Button(emode_frame, text="Resample", state='disabled', command=re_sample)
+    sample_info = ttk.Label(emode_frame, text="Right click to edit Tokens directly.\n"
+                                              "Resampling will regenerate the level,\n"
+                                              "so prior Token edits will be lost.")
 
     # Grid/Remove Edit mode widgets
     def toggle_editmode(t1, t2, t3):
@@ -743,8 +759,8 @@ def TOAD_GUI():
             sc_frame.rowconfigure(1, weight=1)
             sc_frame.rowconfigure(2, weight=1)
 
-            redraw_image(True, rectangle=[(bbox_y1.get()*16, bbox_x1.get()*16),
-                                          (bbox_y2.get()*16, bbox_x2.get()*16)], scale=edit_scale.get())
+            redraw_image(True, rectangle=[(bbox_y1.get() * 16, bbox_x1.get() * 16),
+                                          (bbox_y2.get() * 16, bbox_x2.get() * 16)], scale=edit_scale.get())
 
             update_scale_info(t1, t2, t3)
 
@@ -769,9 +785,9 @@ def TOAD_GUI():
             if bbox_x2.get() >= len(level_obj.ascii_level):
                 bbox_x2.set(len(level_obj.ascii_level))
             if bbox_y1.get() >= bbox_y2.get():
-                bbox_y1.set(bbox_y2.get()-1)
+                bbox_y1.set(bbox_y2.get() - 1)
             if bbox_x1.get() >= bbox_x2.get():
-                bbox_x1.set(bbox_x2.get()-1)
+                bbox_x1.set(bbox_x2.get() - 1)
 
             redraw_image(True, rectangle=[(bbox_y1.get() * 16, bbox_x1.get() * 16),
                                           (bbox_y2.get() * 16, bbox_x2.get() * 16)], scale=edit_scale.get())
@@ -787,7 +803,7 @@ def TOAD_GUI():
                            (round(bbox_y2.get() * sc), round(bbox_x2.get() * sc))]
 
             # Get first tokens noise map on current scale as representation
-            noise_holder = Image.fromarray(level_obj.noises[edit_scale.get()][0, 0, 3:-3, 3:-3].cpu().numpy()*255)
+            noise_holder = Image.fromarray(level_obj.noises[edit_scale.get()][0, 0, 3:-3, 3:-3].cpu().numpy() * 255)
             noise_holder = noise_holder.convert('RGB')
 
             # Draw adjusted bounding box on noise map
