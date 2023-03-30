@@ -325,6 +325,27 @@ def TOAD_GUI():
         use_gen.set(remember_use_gen)  # only set use_gen to True if it was previously
         return
 
+    def evaluate_level(level) -> float:
+        """
+            Py4j Java bridge uses Mario AI Framework to check if the level is playable
+            and at what point the player cant progress anymore
+            :param level: list of strings, each string is a line of the level
+            :return: float, the completion percentage of the level
+        """
+        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout, redirect_stderr=sys.stderr)
+
+        game = gateway.jvm.engine.core.MarioGame()
+        game.initVisuals(2.0)
+
+        agent = gateway.jvm.agents.robinBaumgarten.Agent()
+        result = game.runGame(agent, level, 200)
+        progress = result.getCompletionPercentage()
+
+        gateway.java_process.kill()
+        gateway.close()
+
+        return progress
+
     # ---------------------------------------- Layout ----------------------------------------
 
     settings = ttk.Frame(root, padding=(15, 15, 15, 15), width=1000, height=1000)  # Main Frame
