@@ -8,8 +8,4 @@ from .launchpad import LaunchpadPatcher
 
 patchers = {
     "Wave Function Collapse": WFCPatcher(),
-    "Evolutionary Algorithm": EAPatcher(),
-    "L-System": LSystemPatcher(),
-    "Multi-Pass Generator": MultiPassPatcher(),
-    "Launchpad": LaunchpadPatcher(),
 }
