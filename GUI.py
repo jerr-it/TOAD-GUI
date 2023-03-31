@@ -320,7 +320,7 @@ def TOAD_GUI():
         game = gateway.jvm.engine.core.MarioGame()
         try:
             game.initVisuals(2.0)
-            agent = gateway.jvm.agents.human.Agent()
+            agent = gateway.jvm.agents.robinBaumgarten.Agent()
             game.setAgent(agent)
             while True:
                 result = game.gameLoop(''.join(level_obj.ascii_level), 200, 0, True, 30)

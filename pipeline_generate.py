@@ -14,7 +14,7 @@ MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
 LEVELS_PER_GENERATOR = 10
-THREADS = None  # None for all available threads
+THREADS = 4  # None for all available threads
 
 
 def list_generators() -> list[str]:
@@ -62,6 +62,7 @@ def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path:
     scl_w = LEVEL_WIDTH / generator.reals[-1].shape[-1]
 
     levels = []
+    progresses = []
 
     for i in range(num):
         if verbose:
@@ -70,7 +71,7 @@ def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path:
         ascii_level: list[str] = []
         progress: float = 1.0
 
-        while progress >= 1.0:
+        while 1.0 - progress < 0.01:
             level, scales, noises = generate_sample(
                 generator.Gs, generator.Zs, generator.reals,
                 generator.NoiseAmp, generator.num_layers, generator.token_list,
@@ -81,19 +82,21 @@ def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path:
             progress = evaluate_level(game, agent, ascii_level)
 
         levels.append(ascii_level)
+        progresses.append(progress)
 
     gateway.shutdown()
 
     for i, ascii_level in enumerate(levels):
-        save_generated_level(ascii_level, generator_path, i)
+        save_generated_level(ascii_level, progresses[i], generator_path, i)
 
     return levels
 
 
-def save_generated_level(level: list[str], generator_path: str, number: int = 0):
+def save_generated_level(level: list[str], progress: float, generator_path: str, number: int = 0):
     """
     Saves the generated level to a file.
     :param level: Generated level.
+    :param progress: Progress of the level. Saves time later on.
     :param generator_path: Path to the generator.
     :param number: Number of the level.
     :return: None
@@ -107,6 +110,7 @@ def save_generated_level(level: list[str], generator_path: str, number: int = 0)
     level_path = os.path.join(level_path, level_name)
 
     with open(level_path, "w") as f:
+        f.write(f"{progress}\n")
         for row in level:
             f.write(row)
 
@@ -121,7 +125,7 @@ def evaluate_level(game, agent, level: list[str]) -> float:
     """
     # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
     #  unplayable level is not a good solution
-    result = game.runGame(agent, ''.join(level), 11)
+    result = game.runGame(agent, ''.join(level), 15)
     progress = result.getCompletionPercentage()
 
     return progress
