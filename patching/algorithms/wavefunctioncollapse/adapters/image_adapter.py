@@ -1,15 +1,19 @@
 import matplotlib.image as mpimg
 import numpy as np
 
-from patching.algorithms.wavefunctioncollapse.adapters import PatternScanner
+from patching.algorithms.wavefunctioncollapse.adapters.pattern_scanner import PatternScanner
 
 
 class ImageAdapter(PatternScanner):
     def __init__(self, path: str, kernel_size: int, output_filename: str = "output.png"):
         image = mpimg.imread(path)
+
+        self.output_filename = output_filename
+
         # Convert the image to a 2D array of hexadecimal values.
         data = np.array([[self.pixel_to_hex(pixel) for pixel in line] for line in image])
-        super().__init__(data, kernel_size, output_filename)
+
+        super().__init__(data, kernel_size)
 
     @staticmethod
     def pixel_to_hex(pixel: np.ndarray) -> str:

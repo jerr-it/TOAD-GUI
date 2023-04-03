@@ -1,6 +1,6 @@
 import numpy as np
 
-from patching.algorithms.wavefunctioncollapse.adapters import PatternScanner
+from patching.algorithms.wavefunctioncollapse.adapters.pattern_scanner import PatternScanner
 
 
 class LevelAdapter(PatternScanner):
