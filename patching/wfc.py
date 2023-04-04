@@ -1,6 +1,7 @@
-from patching import Patcher
-from patching.algorithms.wavefunctioncollapse import WFC
-from patching.algorithms.wavefunctioncollapse.adapters import LevelAdapter
+
+from patching.algorithms.wavefunctioncollapse.adapters.level_adapter import LevelAdapter
+from patching.algorithms.wavefunctioncollapse.wfc import WFC
+from patching.patcher import Patcher
 
 
 class WFCPatcher(Patcher):
@@ -13,5 +14,6 @@ class WFCPatcher(Patcher):
             broken_range: tuple[tuple[int, int], tuple[int, int]]  # (x_range, y_range)
     ) -> list[str]:
         level_adapter = LevelAdapter(level, 3)
-        wfc = WFC(level_adapter, (30, 30))
+        wfc = WFC(level_adapter, broken_range, level)
+        wfc.collapse()
         return level_adapter.result

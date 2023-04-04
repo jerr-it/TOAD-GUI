@@ -1,6 +1,6 @@
 import unittest
 
-from pattern import Pattern, Direction
+from patching.algorithms.wavefunctioncollapse.pattern import Pattern, Direction
 
 
 class TestPattern(unittest.TestCase):
@@ -204,3 +204,26 @@ class TestPattern(unittest.TestCase):
         ])
 
         self.assertFalse(pattern.overlaps(target, Direction.LEFT))
+
+    def test_equals_ignore(self):
+        pattern = Pattern([
+            [1, 2],
+            [3, 4]
+        ])
+        target = Pattern([
+            [5, 2],
+            [3, 4]
+        ])
+
+        self.assertTrue(pattern.equals_ignore(target, 1))
+
+        pattern = Pattern([
+            [1, 2],
+            [3, 4]
+        ])
+        target = Pattern([
+            [1, 2],
+            [3, 5]
+        ])
+
+        self.assertFalse(pattern.equals_ignore(target, 1))

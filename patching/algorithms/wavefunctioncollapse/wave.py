@@ -2,17 +2,23 @@ from __future__ import annotations
 
 import numpy as np
 
-from patching.algorithms.wavefunctioncollapse import PatternScanner, Direction, Pattern
+from patching.algorithms.wavefunctioncollapse.adapters.pattern_scanner import PatternScanner
+from patching.algorithms.wavefunctioncollapse.pattern import Pattern, Direction
 
 
 class WaveFunction:
-    def __init__(self, pattern_scanner: PatternScanner):
-        self.pattern_scanner = pattern_scanner
+    def __init__(self, inp: PatternScanner | Pattern):
+        if isinstance(inp, PatternScanner):
+            self.pattern_scanner = inp
 
-        self.patterns = self.pattern_scanner.get_full_pattern_set()
+            self.patterns = self.pattern_scanner.get_full_pattern_set()
 
-        self.entropy = 0.0
-        self.calculate_entropy()
+            self.entropy = 0.0
+            self.calculate_entropy()
+        else:
+            self.patterns = {inp}
+
+            self.entropy = -1
 
     def __hash__(self) -> int:
         return hash(self.patterns)

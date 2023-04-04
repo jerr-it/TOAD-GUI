@@ -1,10 +1,4 @@
-from .patcher import Patcher
-
-from .wfc import WFCPatcher
-from .ea import EAPatcher
-from .lsystem import LSystemPatcher
-from .multipass import MultiPassPatcher
-from .launchpad import LaunchpadPatcher
+from patching.wfc import WFCPatcher
 
 patchers = {
     "Wave Function Collapse": WFCPatcher(),

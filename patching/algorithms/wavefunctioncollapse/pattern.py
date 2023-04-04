@@ -32,6 +32,26 @@ class Pattern:
     def __eq__(self, other: Pattern) -> bool:
         return (self.data == other.data).all()
 
+    def equals_ignore(self, other: Pattern, symbol) -> bool:
+        """
+        Checks if the pattern is equal to another pattern, ignoring a given symbol.
+        :param other: The other pattern to compare to.
+        :param symbol: The symbol to ignore in the comparison.
+        :return: True if the patterns are equal, ignoring the given symbol.
+        """
+        # False if patterns aren't the same shape
+        if self.data.shape != other.data.shape:
+            return False
+
+        # False if patterns aren't equal, ignoring the given symbol
+        for row in range(self.rows):
+            for column in range(self.columns):
+                # If the element is not the symbol, check if it is equal
+                if self.data[row, column] != symbol and self.data[row, column] != other.data[row, column]:
+                    return False
+
+        return True
+
     def center_value(self) -> object:
         """
         Returns the value in the center of the pattern.
@@ -133,14 +153,15 @@ class Pattern:
         Also appends the horizontal and vertical flips of the original pattern.
         Includes append the original pattern.
         """
-        rotations = [self, self.rotate()]
-        for i in range(2):
-            rotations.append(rotations[-1].rotate())
+        # rotations = [self, self.rotate()]
+        # for i in range(2):
+        #     rotations.append(rotations[-1].rotate())
+        #
+        # rotations.append(self.create_horizontal_flip())
+        # rotations.append(self.create_vertical_flip())
 
-        rotations.append(self.create_horizontal_flip())
-        rotations.append(self.create_vertical_flip())
-
-        return rotations
+        # return rotations
+        return [self]
 
     def __str__(self) -> str:
         return str(self.data)
