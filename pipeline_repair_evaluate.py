@@ -25,14 +25,15 @@ def runtime(fn: callable):
     return result, end - start
 
 
-def save_metric_to_file(generator_dir: str, data: dict):
+def save_metric_to_file(generator_dir: str, data: dict, name: str):
     """
     Save a metric as a csv file
     :param generator_dir: Path to the generator directory
     :param data: Metric data
+    :param name: Name of the metric
     :return: None
     """
-    with open(os.path.join(os.path.curdir, "data", generator_dir, "runtimes.csv"), "w") as f:
+    with open(os.path.join(os.path.curdir, "data", generator_dir, name + ".csv"), "w") as f:
         f.write("level,patcher,value\n")
         for level, patches in data.items():
             for patcher, value in patches.items():
@@ -75,7 +76,7 @@ def test_levels(generator_dir: str):
         progress_blocks: int = int(float(level_width) * float(progress))
 
         broken_range = (
-            (progress_blocks - 5, progress_blocks + 5),
+            (max(progress_blocks - 5, 0), min(progress_blocks + 5, level_width)),
             (0, level_height)
         )
 
@@ -90,7 +91,7 @@ def test_levels(generator_dir: str):
 
             runtimes[level_file][patcher_name] = duration
 
-    save_metric_to_file(generator_dir, runtimes)
+    save_metric_to_file(generator_dir, runtimes, "Runtime")
 
 
 generator_paths = list_generators()
