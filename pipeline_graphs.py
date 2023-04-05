@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 metrics = [
     {"name": "Runtime", "unit": "s"},
-    {"name": "Memory", "unit": "MiB"}
+    {"name": "Memory", "unit": "B"}
 ]
 
 
@@ -44,12 +44,16 @@ for metric in metrics:
     file_names: list[str] = list_metric_files(metric["name"])
     data: pd.DataFrame = aggregate_dataframes(file_names)
 
-    grouped = data.groupby("patcher")[["value"]].agg(["mean", "var"])
+    # Group data by column 'patcher' and calculate the mean for each group
+    grouped_data = data.groupby("patcher")["value"].mean()
 
-    # Plot the data
-    ax = grouped.plot.bar(yerr=grouped["value"]["var"], capsize=4)
-    ax.set_ylabel(metric["name"] + " (" + metric["unit"] + ")")
-    ax.set_xlabel("Patcher")
-    ax.set_title("Mean and variance of " + metric["name"] + " per patcher")
+    plt.figure(figsize=(10, 5))
+    ax = grouped_data.plot(kind="bar")
+    ax.set_xticklabels(grouped_data.index, rotation=0)
+
+    plt.xlabel("Patcher")
+    plt.ylabel(metric["name"] + " (" + metric["unit"] + ")")
+
+    plt.title("Average " + metric["name"] + " per patcher")
 
     plt.show()
