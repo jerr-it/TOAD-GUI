@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 metrics = [
     {"name": "Runtime", "unit": "s"},
+    {"name": "Memory", "unit": "MiB"}
 ]
 
 
@@ -46,10 +47,9 @@ for metric in metrics:
     grouped = data.groupby("patcher")[["value"]].agg(["mean", "var"])
 
     # Plot the data
-    fig, ax = plt.subplots()
-    ax.set_title(metric["name"])
-    ax.set_ylabel(metric["name"] + " [" + metric["unit"] + "]")
+    ax = grouped.plot.bar(yerr=grouped["value"]["var"], capsize=4)
+    ax.set_ylabel(metric["name"] + " (" + metric["unit"] + ")")
     ax.set_xlabel("Patcher")
-    ax.bar(grouped.index, grouped["value"]["mean"], yerr=grouped["value"]["var"])
+    ax.set_title("Mean and variance of " + metric["name"] + " per patcher")
 
     plt.show()

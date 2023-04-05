@@ -1,5 +1,6 @@
 import os
 import time
+import tracemalloc
 
 from patching import patchers
 
@@ -13,16 +14,25 @@ def list_generators() -> list[str]:
     return os.listdir(base_path)
 
 
-def runtime(fn: callable):
+def benchmark(fn: callable):
     """
-    Measure the runtime of a function.
+    Decorator to measure the runtime of a function.
     :param fn: Function to measure
     :return: Function result and runtime
     """
-    start = time.time()
-    result = fn()
-    end = time.time()
-    return result, end - start
+    def wrapper(*args, **kwargs):
+        tracemalloc.start()
+
+        start = time.time()
+        result = fn(*args, **kwargs)
+        end = time.time()
+
+        _, peak = tracemalloc.get_traced_memory()
+
+        tracemalloc.stop()
+
+        return result, end - start, peak
+    return wrapper
 
 
 def save_metric_to_file(generator_dir: str, data: dict, name: str):
@@ -50,6 +60,7 @@ def test_levels(generator_dir: str):
 
     # level_name -> (patcher_name -> (metric_name -> metric_value))
     runtimes = {}
+    memory_usage = {}
 
     for level_file in level_files:
         # Ignore non-level files
@@ -84,14 +95,24 @@ def test_levels(generator_dir: str):
         for patcher_name, patcher in patchers.items():
             print(f"Repairing {level_file} with {patcher_name}...")
 
-            patched_level_section, duration = runtime(lambda: patcher.patch(level, broken_range))
+            @benchmark
+            def patcher_fn():
+                return patcher.patch(level, broken_range)
+
+            patched_level_section, runtime, peak_mem = patcher_fn()
 
             if level_file not in runtimes:
                 runtimes[level_file] = {}
 
-            runtimes[level_file][patcher_name] = duration
+            runtimes[level_file][patcher_name] = runtime
+
+            if level_file not in memory_usage:
+                memory_usage[level_file] = {}
+
+            memory_usage[level_file][patcher_name] = peak_mem
 
     save_metric_to_file(generator_dir, runtimes, "Runtime")
+    save_metric_to_file(generator_dir, memory_usage, "Memory")
 
 
 generator_paths = list_generators()
