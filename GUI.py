@@ -354,7 +354,7 @@ def TOAD_GUI():
 
         # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
         #  unplayable level is not a good solution
-        result = game.runGame(agent, level, 10)
+        result = game.runGame(agent, level, 15)
         progress = result.getCompletionPercentage()
 
         gateway.java_process.kill()
