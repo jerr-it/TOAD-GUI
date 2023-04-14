@@ -1,9 +1,12 @@
+import concurrent.futures
 import os
 import time
 import tracemalloc
 
 from patching import patchers
 from patching.metrics import metrics
+
+THREADS = 4
 
 
 def list_generators() -> list[str]:
@@ -132,6 +135,18 @@ def test_levels(generator_dir: str):
     save_metrics_to_file(generator_dir, metric_results)
 
 
-generator_paths = list_generators()
-for generator_path in generator_paths:
-    test_levels(generator_path)
+def pipeline_repair_evaluate():
+    with concurrent.futures.ThreadPoolExecutor(max_workers=THREADS) as executor:
+        futures = [
+            executor.submit(
+                test_levels,
+                generator_path
+            )
+            for generator_path in list_generators()
+        ]
+
+        for future in concurrent.futures.as_completed(futures):
+            pass
+
+
+pipeline_repair_evaluate()
