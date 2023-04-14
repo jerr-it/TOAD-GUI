@@ -2,10 +2,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-metrics = [
-    {"name": "Runtime", "unit": "s"},
-    {"name": "Memory", "unit": "B"}
-]
+from patching.metrics.metric import metrics
 
 
 def list_metric_files(metric: str) -> list[str]:

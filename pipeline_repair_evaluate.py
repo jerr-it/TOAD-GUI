@@ -3,6 +3,7 @@ import time
 import tracemalloc
 
 from patching import patchers
+from patching.metrics import metrics
 
 
 def list_generators() -> list[str]:
@@ -35,19 +36,37 @@ def benchmark(fn: callable):
     return wrapper
 
 
-def save_metric_to_file(generator_dir: str, data: dict, name: str):
+def save_metrics_to_file(generator_dir: str, data: dict):
     """
-    Save a metric as a csv file
+    Save a metrics as a csv file
     :param generator_dir: Path to the generator directory
     :param data: Metric data
     :param name: Name of the metric
     :return: None
     """
-    with open(os.path.join(os.path.curdir, "data", generator_dir, name + ".csv"), "w") as f:
-        f.write("level,patcher,value\n")
-        for level, patches in data.items():
-            for patcher, value in patches.items():
-                f.write(f"{level},{patcher},{value}\n")
+    with open(os.path.join(os.path.curdir, "data", generator_dir, "metrics.csv"), "w") as f:
+        # Write header
+        f.write("level,patcher,")
+
+        for i in range(len(metrics)):
+            f.write(f"{metrics[i]['name']}")
+
+            if i < len(metrics) - 1:
+                f.write(",")
+
+        f.write("\n")
+
+        # Write data
+        for level_name, patcher_data in data.items():
+            for patcher_name, metric_data in patcher_data.items():
+                f.write(f"{level_name},{patcher_name},")
+
+                for i in range(len(metrics)):
+                    f.write(f"{metric_data[metrics[i]['name']]}")
+                    if i < len(metrics) - 1:
+                        f.write(",")
+
+                f.write("\n")
 
 
 def test_levels(generator_dir: str):
@@ -59,8 +78,7 @@ def test_levels(generator_dir: str):
     level_files: list[str] = os.listdir(os.path.join(os.path.curdir, "data", generator_dir))
 
     # level_name -> (patcher_name -> (metric_name -> metric_value))
-    runtimes = {}
-    memory_usage = {}
+    metric_results = {}
 
     for level_file in level_files:
         # Ignore non-level files
@@ -91,28 +109,27 @@ def test_levels(generator_dir: str):
             (0, level_height)
         )
 
+        if level_file not in metric_results:
+            metric_results[level_file] = {}
+
         # Iterate available patchers
         for patcher_name, patcher in patchers.items():
             print(f"Repairing {level_file} with {patcher_name}...")
 
-            @benchmark
-            def patcher_fn():
-                return patcher.patch(level, broken_range)
+            if patcher_name not in metric_results[level_file]:
+                metric_results[level_file][patcher_name] = {}
 
-            patched_level_section, runtime, peak_mem = patcher_fn()
+            for metric in metrics:
+                metric["object"].pre_hook()
 
-            if level_file not in runtimes:
-                runtimes[level_file] = {}
+            patched_section = patcher.patch(level, broken_range)
 
-            runtimes[level_file][patcher_name] = runtime
+            for metric in reversed(metrics):
+                result = metric["object"].post_hook(patched_section)
 
-            if level_file not in memory_usage:
-                memory_usage[level_file] = {}
+                metric_results[level_file][patcher_name][metric["name"]] = result
 
-            memory_usage[level_file][patcher_name] = peak_mem
-
-    save_metric_to_file(generator_dir, runtimes, "Runtime")
-    save_metric_to_file(generator_dir, memory_usage, "Memory")
+    save_metrics_to_file(generator_dir, metric_results)
 
 
 generator_paths = list_generators()
