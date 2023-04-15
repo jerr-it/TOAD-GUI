@@ -6,8 +6,6 @@ import tracemalloc
 from patching import patchers
 from patching.metrics import metrics
 
-THREADS = 4
-
 
 def list_generators() -> list[str]:
     """
@@ -88,6 +86,8 @@ def test_levels(generator_dir: str):
         if not level_file.endswith(".txt"):
             continue
 
+        print(f"Testing {level_file}...")
+
         level_path: str = os.path.join(os.path.curdir, "data", generator_dir, level_file)
 
         # Read level line by line
@@ -136,17 +136,8 @@ def test_levels(generator_dir: str):
 
 
 def pipeline_repair_evaluate():
-    with concurrent.futures.ThreadPoolExecutor(max_workers=THREADS) as executor:
-        futures = [
-            executor.submit(
-                test_levels,
-                generator_path
-            )
-            for generator_path in list_generators()
-        ]
-
-        for future in concurrent.futures.as_completed(futures):
-            pass
+    for generator_path in list_generators():
+        test_levels(generator_path)
 
 
 pipeline_repair_evaluate()

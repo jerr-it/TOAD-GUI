@@ -2,21 +2,20 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from patching.metrics.metric import metrics
+from patching.metrics import metrics
 
 
-def list_metric_files(metric: str) -> list[str]:
+def list_metric_files() -> list[str]:
     """
-    List all files for a given metric. Every metric has its own file.
-    :param metric: Name of the metric
-    :return: Paths to all files for the given metric
+    List all metric files in the data directory.
+    :return: Paths to all files containing metric data
     """
     base_path: str = os.path.join(os.path.curdir, "data")
     file_names: list[str] = []
 
     for root, dirs, files in os.walk(base_path):
         for file in files:
-            if file == metric + ".csv":
+            if file == "metrics.csv":
                 file_names.append(os.path.join(root, file))
 
     return file_names
@@ -37,12 +36,12 @@ def aggregate_dataframes(file_names: list[str]) -> pd.DataFrame:
     return pd.concat(dataframes)
 
 
-for metric in metrics:
-    file_names: list[str] = list_metric_files(metric["name"])
-    data: pd.DataFrame = aggregate_dataframes(file_names)
+file_names: list[str] = list_metric_files()
+data: pd.DataFrame = aggregate_dataframes(file_names)
 
+for metric in metrics:
     # Group data by column 'patcher' and calculate the mean for each group
-    grouped_data = data.groupby("patcher")["value"].mean()
+    grouped_data = data.groupby("patcher")[metric["name"]].mean()
 
     plt.figure(figsize=(10, 5))
     ax = grouped_data.plot(kind="bar")
