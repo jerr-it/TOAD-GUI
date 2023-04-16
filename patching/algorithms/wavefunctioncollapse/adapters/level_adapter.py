@@ -7,10 +7,11 @@ class LevelAdapter(PatternScanner):
     def __init__(self, level: list[str], kernel_size: int):
         data = np.array([[char for char in line] for line in level])
 
+        self.original_level = data.copy()
         self.result: list[str] = []
 
         super().__init__(data, kernel_size)
 
     def on_completion(self, grid: np.ndarray):
         # Convert grid back to a list of strings
-        self.result = [''.join(row) for row in grid]
+        self.result = grid

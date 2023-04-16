@@ -11,5 +11,10 @@ class Runtime(Metric):
     def pre_hook(self):
         self.start = time.time()
 
-    def post_hook(self, fixed_level: list[str]) -> float:
+    def post_hook(
+            self,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
+    ) -> float:
         return time.time() - self.start

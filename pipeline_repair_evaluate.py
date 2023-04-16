@@ -78,6 +78,17 @@ def test_levels(generator_dir: str):
     """
     level_files: list[str] = os.listdir(os.path.join(os.path.curdir, "data", generator_dir))
 
+    # Extract original level id from generator directory name
+    # generator_dir follows the format "TOAD_GAN_X-X", where X-X is the level id
+    level_id: str = generator_dir.split("_")[-1]
+
+    # Load original generator level for metric calculation
+    original_level_path: str = os.path.join(os.path.curdir, "levels", "originals", f"lvl_{level_id}.txt")
+    original_level: list[str] = []
+    with open(original_level_path, "r") as f:
+        for line in f:
+            original_level.append(line.rstrip())
+
     # level_name -> (patcher_name -> (metric_name -> metric_value))
     metric_results = {}
 
@@ -99,6 +110,7 @@ def test_levels(generator_dir: str):
         # First line is the progress the agent made, read and remove it
         progress: str = level[0]
         level = level[1:]
+        generated_level = level.copy()
 
         # Level height is the number of lines in the level
         level_height: int = len(level)
@@ -125,10 +137,11 @@ def test_levels(generator_dir: str):
             for metric in metrics:
                 metric["object"].pre_hook()
 
-            patched_section = patcher.patch(level, broken_range)
+            patched_level = patcher.patch(level, broken_range)
 
             for metric in reversed(metrics):
-                result = metric["object"].post_hook(patched_section)
+                # TODO insert original level, insert patched level instead of section
+                result = metric["object"].post_hook(original_level, generated_level, patched_level)
 
                 metric_results[level_file][patcher_name][metric["name"]] = result
 

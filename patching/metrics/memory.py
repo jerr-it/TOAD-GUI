@@ -8,7 +8,12 @@ class Memory(Metric):
         tracemalloc.clear_traces()
         tracemalloc.start()
 
-    def post_hook(self, fixed_level: list[str]) -> int:
+    def post_hook(
+            self,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
+    ) -> int:
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         return peak
