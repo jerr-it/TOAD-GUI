@@ -80,6 +80,10 @@ def tpkl(level_a: list[str], level_b: list[str], kernel_size: int = 3) -> float:
         probability_b = tile_probabilities_b.get(tile, EPSILON)
         divergence += probability_a * np.log(probability_a / probability_b)
 
+    for tile, probability_b in tile_probabilities_b.items():
+        probability_a = tile_probabilities_a.get(tile, EPSILON)
+        divergence += probability_b * np.log(probability_b / probability_a)
+
     return divergence
 
 

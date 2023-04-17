@@ -3,7 +3,7 @@ import os
 import time
 import tracemalloc
 
-from patching import patchers
+from patching import patchers, REPAIR_STAGE_THREADS
 from patching.metrics import metrics
 
 
@@ -149,8 +149,14 @@ def test_levels(generator_dir: str):
 
 
 def pipeline_repair_evaluate():
-    for generator_path in list_generators():
-        test_levels(generator_path)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
+        futures = [
+            executor.submit(test_levels, generator_path)
+            for generator_path in list_generators()
+        ]
+
+        for future in concurrent.futures.as_completed(futures):
+            future.result()
 
 
 pipeline_repair_evaluate()

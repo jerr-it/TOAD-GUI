@@ -6,6 +6,8 @@ import concurrent.futures
 import os
 
 from py4j.java_gateway import JavaGateway
+
+from patching import GENERATE_STAGE_THREADS
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 from utils.level_utils import one_hot_to_ascii_level
 
@@ -14,7 +16,6 @@ MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
 LEVELS_PER_GENERATOR = 10
-THREADS = 4  # None for all available threads
 
 
 def list_generators() -> list[str]:
@@ -132,7 +133,7 @@ def evaluate_level(game, agent, level: list[str]) -> float:
 
 
 def pipeline_generate():
-    with concurrent.futures.ThreadPoolExecutor(max_workers=THREADS) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
         futures = [
             executor.submit(
                 generate_unplayable_levels,
