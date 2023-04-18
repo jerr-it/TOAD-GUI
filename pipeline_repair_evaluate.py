@@ -97,7 +97,7 @@ def test_levels(generator_dir: str):
         if not level_file.endswith(".txt"):
             continue
 
-        print(f"Testing {level_file}...")
+        # print(f"Testing {level_file}...")
 
         level_path: str = os.path.join(os.path.curdir, "data", generator_dir, level_file)
 
@@ -110,7 +110,6 @@ def test_levels(generator_dir: str):
         # First line is the progress the agent made, read and remove it
         progress: str = level[0]
         level = level[1:]
-        generated_level = level.copy()
 
         # Level height is the number of lines in the level
         level_height: int = len(level)
@@ -120,7 +119,7 @@ def test_levels(generator_dir: str):
         progress_blocks: int = int(float(level_width) * float(progress))
 
         broken_range = (
-            (max(progress_blocks - 5, 0), min(progress_blocks + 5, level_width)),
+            (max(progress_blocks - 5, 0), min(progress_blocks + 5, level_width - 2)),
             (0, level_height)
         )
 
@@ -137,11 +136,11 @@ def test_levels(generator_dir: str):
             for metric in metrics:
                 metric["object"].pre_hook()
 
-            patched_level = patcher.patch(level, broken_range)
+            patched_level = patcher.patch(level_file, original_level, level, broken_range)
 
             for metric in reversed(metrics):
                 # TODO insert original level, insert patched level instead of section
-                result = metric["object"].post_hook(original_level, generated_level, patched_level)
+                result = metric["object"].post_hook(original_level, level, patched_level)
 
                 metric_results[level_file][patcher_name][metric["name"]] = result
 
@@ -157,6 +156,8 @@ def pipeline_repair_evaluate():
 
         for future in concurrent.futures.as_completed(futures):
             future.result()
+    # for generator_path in list_generators():
+    #     test_levels(generator_path)
 
 
 pipeline_repair_evaluate()
