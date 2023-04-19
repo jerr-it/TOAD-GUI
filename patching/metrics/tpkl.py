@@ -39,7 +39,7 @@ class TPKLPatched(Metric):
         return tpkl(original_level, fixed_level)
 
 
-def tpkl(level_a: list[str], level_b: list[str], kernel_size: int = 3) -> float:
+def tpkl(level_a: list[str] | np.ndarray, level_b: list[str] | np.ndarray, kernel_size: int = 3) -> float:
     """
     Calculate the Tile pattern kullback-leibler divergence between two levels.
     See https://arxiv.org/pdf/1905.05077.pdf
@@ -50,8 +50,9 @@ def tpkl(level_a: list[str], level_b: list[str], kernel_size: int = 3) -> float:
     :return: The Tile pattern kullback-leibler divergence between the two levels.
     """
     # Convert levels to 2d numpy arrays, splitting the strings into lists of chars
-    level_a = np.array([list(x) for x in level_a])
-    level_b = np.array([list(x) for x in level_b])
+    if isinstance(level_a, list):
+        level_a = np.array([list(x) for x in level_a])
+        level_b = np.array([list(x) for x in level_b])
 
     # Iterate over all kernel_size x kernel_size tiles in the level
     # and count the number of times each tile appears

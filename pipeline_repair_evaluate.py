@@ -134,7 +134,7 @@ def test_levels(generator_dir: str):
             for metric in metrics:
                 metric["object"].pre_hook()
 
-            patched_level = patcher.patch(level_file, original_level, level, broken_range)
+            patched_level = patcher.patch(original_level, level, broken_range)
 
             for metric in reversed(metrics):
                 # TODO insert original level, insert patched level instead of section
@@ -154,6 +154,8 @@ def pipeline_repair_evaluate():
 
         for future in concurrent.futures.as_completed(futures):
             future.result()
+    # for generator_path in list_generators():
+    #     test_levels(generator_path)
 
 
 pipeline_repair_evaluate()
