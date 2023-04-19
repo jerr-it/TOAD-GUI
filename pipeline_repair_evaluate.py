@@ -97,8 +97,6 @@ def test_levels(generator_dir: str):
         if not level_file.endswith(".txt"):
             continue
 
-        # print(f"Testing {level_file}...")
-
         level_path: str = os.path.join(os.path.curdir, "data", generator_dir, level_file)
 
         # Read level line by line
@@ -156,8 +154,6 @@ def pipeline_repair_evaluate():
 
         for future in concurrent.futures.as_completed(futures):
             future.result()
-    # for generator_path in list_generators():
-    #     test_levels(generator_path)
 
 
 pipeline_repair_evaluate()
