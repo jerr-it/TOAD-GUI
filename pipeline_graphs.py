@@ -50,6 +50,6 @@ for metric in metrics:
     plt.xlabel("Patcher")
     plt.ylabel(metric["name"] + " (" + metric["unit"] + ")")
 
-    plt.title("Average " + metric["name"] + " per patcher")
+    plt.title("Average " + metric["name"])
 
     plt.show()
