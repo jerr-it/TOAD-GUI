@@ -142,6 +142,12 @@ def test_levels(generator_dir: str):
 
                 metric_results[level_file][patcher_name][metric["name"]] = result
 
+            # Save patched level to file
+            patched_level_path: str = os.path.join(os.path.curdir, "data", generator_dir, f"{level_file}_{patcher_name}.txt")
+            with open(patched_level_path, "w") as f:
+                for line in patched_level:
+                    f.write(f"{line}\n")
+
     save_metrics_to_file(generator_dir, metric_results)
 
 

@@ -9,13 +9,13 @@ from py4j.java_gateway import JavaGateway
 
 from patching import GENERATE_STAGE_THREADS
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
-from utils.level_utils import one_hot_to_ascii_level
+from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
 MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario-1.0-SNAPSHOT.jar"))
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
-LEVELS_PER_GENERATOR = 10
+LEVELS_PER_GENERATOR = 100
 
 
 def list_generators() -> list[str]:
@@ -42,7 +42,7 @@ def load_generator(path: str) -> TOADGAN_obj:
     return load_trained_pyramid(path)[0]
 
 
-def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path: str, verbose: bool = False) -> list[list[str]]:
+def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path: str, verbose: bool = False):
     """
     Generates unplayable levels.
     :param num: Number of levels to generate.
@@ -62,8 +62,8 @@ def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path:
     scl_h = LEVEL_HEIGHT / generator.reals[-1].shape[-2]
     scl_w = LEVEL_WIDTH / generator.reals[-1].shape[-1]
 
-    levels = []
-    progresses = []
+    unplayable_level_count = 0
+    total_level_count = 0
 
     for i in range(num):
         if verbose:
@@ -79,18 +79,23 @@ def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path:
                 scale_h=scl_w, scale_v=scl_h
             )
 
+            total_level_count += 1
+
             ascii_level = one_hot_to_ascii_level(level, generator.token_list)
+            ascii_level = place_a_mario_token(ascii_level)
+
             progress = evaluate_level(game, agent, ascii_level)
 
-        levels.append(ascii_level)
-        progresses.append(progress)
+        unplayable_level_count += 1
 
+        save_generated_level(ascii_level, progress, generator_path, i)
+
+    # Write the number of unplayable levels to a file
+    with open(os.path.join(os.path.curdir, "data", "unplayable_levels_quote.txt"), "a") as f:
+        f.write(f"{generator_path}: {unplayable_level_count}/{total_level_count}, {unplayable_level_count/total_level_count}\n")
+
+    gateway.java_process.kill()
     gateway.shutdown()
-
-    for i, ascii_level in enumerate(levels):
-        save_generated_level(ascii_level, progresses[i], generator_path, i)
-
-    return levels
 
 
 def save_generated_level(level: list[str], progress: float, generator_path: str, number: int = 0):
@@ -126,7 +131,7 @@ def evaluate_level(game, agent, level: list[str]) -> float:
     """
     # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
     #  unplayable level is not a good solution
-    result = game.runGame(agent, ''.join(level), 15)
+    result = game.runGame(agent, ''.join(level), 20)
     progress = result.getCompletionPercentage()
 
     return progress
