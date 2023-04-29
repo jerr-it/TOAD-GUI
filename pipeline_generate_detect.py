@@ -15,7 +15,7 @@ MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
-LEVELS_PER_GENERATOR = 100
+LEVELS_PER_GENERATOR = 5
 
 
 def list_generators() -> list[str]:
@@ -42,14 +42,11 @@ def load_generator(path: str) -> TOADGAN_obj:
     return load_trained_pyramid(path)[0]
 
 
-def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path: str, verbose: bool = False):
+def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int):
     """
-    Generates unplayable levels.
-    :param num: Number of levels to generate.
+    Generates an unplayable level.
     :param generator: Generator to use.
-    :param generator_path: File path to the generator.
-    :param verbose: True if the progress should be printed to the console.
-    :return: Unplayable level.
+    :return: (level, progress, number of tries)
     """
     gateway = JavaGateway.launch_gateway(
         classpath=MARIO_AI_PATH,
@@ -62,40 +59,28 @@ def generate_unplayable_levels(generator: TOADGAN_obj, num: int, generator_path:
     scl_h = LEVEL_HEIGHT / generator.reals[-1].shape[-2]
     scl_w = LEVEL_WIDTH / generator.reals[-1].shape[-1]
 
-    unplayable_level_count = 0
-    total_level_count = 0
+    attempts = 0
 
-    for i in range(num):
-        if verbose:
-            print(f"Generating level {i + 1}/{num} for {generator_path}")
+    ascii_level: list[str] = []
+    progress: float = 1.0
 
-        ascii_level: list[str] = []
-        progress: float = 1.0
+    while 1.0 - progress < 0.01:
+        level, scales, noises = generate_sample(
+            generator.Gs, generator.Zs, generator.reals,
+            generator.NoiseAmp, generator.num_layers, generator.token_list,
+            scale_h=scl_w, scale_v=scl_h
+        )
+        attempts += 1
 
-        while 1.0 - progress < 0.01:
-            level, scales, noises = generate_sample(
-                generator.Gs, generator.Zs, generator.reals,
-                generator.NoiseAmp, generator.num_layers, generator.token_list,
-                scale_h=scl_w, scale_v=scl_h
-            )
+        ascii_level = one_hot_to_ascii_level(level, generator.token_list)
+        ascii_level = place_a_mario_token(ascii_level)
 
-            total_level_count += 1
-
-            ascii_level = one_hot_to_ascii_level(level, generator.token_list)
-            ascii_level = place_a_mario_token(ascii_level)
-
-            progress = evaluate_level(game, agent, ascii_level)
-
-        unplayable_level_count += 1
-
-        save_generated_level(ascii_level, progress, generator_path, i)
-
-    # Write the number of unplayable levels to a file
-    with open(os.path.join(os.path.curdir, "data", "unplayable_levels_quote.txt"), "a") as f:
-        f.write(f"{generator_path}: {unplayable_level_count}/{total_level_count}, {unplayable_level_count/total_level_count}\n")
+        progress = evaluate_level(game, agent, ascii_level)
 
     gateway.java_process.kill()
     gateway.shutdown()
+
+    return ascii_level, progress, attempts
 
 
 def save_generated_level(level: list[str], progress: float, generator_path: str, number: int = 0):
@@ -138,19 +123,37 @@ def evaluate_level(game, agent, level: list[str]) -> float:
 
 
 def pipeline_generate():
-    with concurrent.futures.ThreadPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
-        futures = [
-            executor.submit(
-                generate_unplayable_levels,
-                load_generator(generator_path),
-                LEVELS_PER_GENERATOR,
-                generator_path,
-                verbose=True)
-            for generator_path in list_generators()
-        ]
+    generator_attempts = {}
+    for generator_path in list_generators():
+        total_attempts = 0
+        with concurrent.futures.ThreadPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
+            futures = [
+                executor.submit(
+                    generate_unplayable_level,
+                    load_generator(generator_path),
+                )
+                for _ in range(LEVELS_PER_GENERATOR)
+            ]
 
-        for future in concurrent.futures.as_completed(futures):
-            pass
+            idx = 0
+            for future in concurrent.futures.as_completed(futures):
+                level, progress, attempts = future.result()
+
+                save_generated_level(level, progress, generator_path, idx)
+                print(f"Saved level {idx} for {generator_path} with {attempts} attempts.")
+
+                total_attempts += attempts
+                idx += 1
+
+        generator_attempts[generator_path] = total_attempts
+
+    # Save attempts in data/attempts.csv
+    with open(os.path.join(os.path.curdir, "data", "attempts.csv"), "w") as f:
+        # Write header
+        f.write("generator,level,attempts,share\n")
+
+        for generator_path, total_attempts in generator_attempts.items():
+            f.write(f"{generator_path},{LEVELS_PER_GENERATOR},{total_attempts},{LEVELS_PER_GENERATOR / total_attempts}\n")
 
 
 pipeline_generate()
