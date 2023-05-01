@@ -14,7 +14,7 @@ from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
-LEVELS_PER_GENERATOR = 5
+LEVELS_PER_GENERATOR = 10
 
 
 def list_generators() -> list[str]:
@@ -52,9 +52,6 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
         die_on_exit=True,
     )
 
-    game = gateway.jvm.mff.agents.common.AgentMarioGame()
-    agent = gateway.jvm.mff.agents.robinBaumgartenSlimWindowAdvance.Agent()
-
     scl_h = LEVEL_HEIGHT / generator.reals[-1].shape[-2]
     scl_w = LEVEL_WIDTH / generator.reals[-1].shape[-1]
 
@@ -64,6 +61,9 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
     progress: float = 1.0
 
     while 1.0 - progress < 0.01:
+        game = gateway.jvm.mff.agents.common.AgentMarioGame()
+        agent = gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
+
         level, scales, noises = generate_sample(
             generator.Gs, generator.Zs, generator.reals,
             generator.NoiseAmp, generator.num_layers, generator.token_list,
@@ -113,9 +113,8 @@ def evaluate_level(game, agent, level: list[str]) -> float:
     :param level: Super Mario level defined as a list of strings. (Row-wise)
     :return: Progress in %
     """
-    # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
-    #  unplayable level is not a good solution
-    result = game.runGame(agent, ''.join(level), 20, 0, False)
+    # Run the game: agent, level, time limit, mario state, visual output, fps, scale
+    result = game.runGame(agent, ''.join(level), 20, 0, False, 4000, 2.0)
     progress = result.getCompletionPercentage()
 
     return progress

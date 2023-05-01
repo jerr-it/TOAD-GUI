@@ -316,14 +316,14 @@ def TOAD_GUI():
         remember_use_gen = use_gen.get()
         use_gen.set(False)
         # Py4j Java bridge uses Mario AI Framework
-        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout,
+        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=False, redirect_stdout=sys.stdout,
                                              redirect_stderr=sys.stderr)
-        game = gateway.jvm.mff.agents.common.AgentMarioGame()
+
         try:
-            # game.initVisuals(2.0)
-            agent = gateway.jvm.mff.agents.robinBaumgartenSlimWindowAdvance.Agent()
+            game = gateway.jvm.mff.agents.common.AgentMarioGame()
+            agent = gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
             while True:
-                result = game.runGame(agent, ''.join(level_obj.ascii_level), 200, 0, True)
+                result = game.runGame(agent, ''.join(level_obj.ascii_level), 20, 0, True, 30, 2.0)
                 perc = int(result.getCompletionPercentage() * 100)
                 error_msg.set("Level Played. Completion Percentage: %d%%" % perc)
         except Exception as e:
@@ -350,7 +350,7 @@ def TOAD_GUI():
                                              redirect_stderr=sys.stderr)
 
         game = gateway.jvm.mff.agents.common.AgentMarioGame()
-        agent = gateway.jvm.mff.agents.robinBaumgartenSlimWindowAdvance.Agent()
+        agent = gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
 
         # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
         #  unplayable level is not a good solution
