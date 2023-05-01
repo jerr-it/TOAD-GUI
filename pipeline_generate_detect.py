@@ -7,11 +7,10 @@ import os
 
 from py4j.java_gateway import JavaGateway
 
+from GUI import MARIO_AI_PATH
 from patching import GENERATE_STAGE_THREADS
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
-
-MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario-1.0-SNAPSHOT.jar"))
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
@@ -53,8 +52,8 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
         die_on_exit=True,
     )
 
-    game = gateway.jvm.engine.core.MarioGame()
-    agent = gateway.jvm.agents.robinBaumgarten.Agent()
+    game = gateway.jvm.mff.agents.common.AgentMarioGame()
+    agent = gateway.jvm.mff.agents.robinBaumgartenSlimWindowAdvance.Agent()
 
     scl_h = LEVEL_HEIGHT / generator.reals[-1].shape[-2]
     scl_w = LEVEL_WIDTH / generator.reals[-1].shape[-1]
@@ -116,7 +115,7 @@ def evaluate_level(game, agent, level: list[str]) -> float:
     """
     # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
     #  unplayable level is not a good solution
-    result = game.runGame(agent, ''.join(level), 20)
+    result = game.runGame(agent, ''.join(level), 20, 0, False)
     progress = result.getCompletionPercentage()
 
     return progress

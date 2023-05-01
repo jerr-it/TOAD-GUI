@@ -20,7 +20,8 @@ from utils.level_image_gen import LevelImageGen
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 
 # Path to the AI Framework jar for Playing levels
-MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario-1.0-SNAPSHOT.jar"))
+# MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario-1.0-SNAPSHOT.jar"))
+MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario_ai_revisited.jar"))
 
 # Check if windows user
 if platform.system() == "Windows":
@@ -317,21 +318,20 @@ def TOAD_GUI():
         # Py4j Java bridge uses Mario AI Framework
         gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout,
                                              redirect_stderr=sys.stderr)
-        game = gateway.jvm.engine.core.MarioGame()
+        game = gateway.jvm.mff.agents.common.AgentMarioGame()
         try:
-            game.initVisuals(2.0)
-            agent = gateway.jvm.agents.robinBaumgarten.Agent()
-            game.setAgent(agent)
+            # game.initVisuals(2.0)
+            agent = gateway.jvm.mff.agents.robinBaumgartenSlimWindowAdvance.Agent()
             while True:
-                result = game.gameLoop(''.join(level_obj.ascii_level), 200, 0, True, 30)
+                result = game.runGame(agent, ''.join(level_obj.ascii_level), 200, 0, True)
                 perc = int(result.getCompletionPercentage() * 100)
                 error_msg.set("Level Played. Completion Percentage: %d%%" % perc)
-        except Exception:
-            error_msg.set("Level Play was interrupted.")
+        except Exception as e:
+            error_msg.set(f"Error while playing level: {e}")
             is_loaded.set(True)
             use_gen.set(remember_use_gen)
         finally:
-            game.getWindow().dispose()
+            # game.getWindow().dispose()
             gateway.java_process.kill()
             gateway.close()
 
@@ -349,12 +349,12 @@ def TOAD_GUI():
         gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout,
                                              redirect_stderr=sys.stderr)
 
-        game = gateway.jvm.engine.core.MarioGame()
-        agent = gateway.jvm.agents.robinBaumgarten.Agent()
+        game = gateway.jvm.mff.agents.common.AgentMarioGame()
+        agent = gateway.jvm.mff.agents.robinBaumgartenSlimWindowAdvance.Agent()
 
         # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
         #  unplayable level is not a good solution
-        result = game.runGame(agent, level, 15)
+        result = game.runGame(agent, level, 20, 0, False)
         progress = result.getCompletionPercentage()
 
         gateway.java_process.kill()
