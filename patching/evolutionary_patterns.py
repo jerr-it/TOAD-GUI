@@ -27,11 +27,12 @@ class EvolutionaryPatterns(Patcher):
 
 
 class Population:
-    def __init__(self,
-                 level: list[str],
-                 width: int,
-                 original_level: list[str],
-                 broken_range: tuple[tuple[int, int], tuple[int, int]]
+    def __init__(
+            self,
+            level: list[str],
+            width: int,
+            original_level: list[str],
+            broken_range: tuple[tuple[int, int], tuple[int, int]]
     ):
         self.width = width
 
@@ -51,8 +52,12 @@ class Population:
         # Create a population of specimens
         self.population = []
         for _ in range(POPULATION_SIZE):
+            # Pick a random set of slices, returns indices
             rng_slices = np.random.choice(len(self.slice_set), size=self.width)
-            self.population.append(Specimen(rng_slices))
+            # Convert indices to the actual slices
+            slices = [self.slice_set[i] for i in rng_slices]
+
+            self.population.append(Specimen(slices))
 
     def step(self):
         # Sort the population by fitness (ascending), lower is better
@@ -99,7 +104,9 @@ class Specimen:
 
     def mutate(self, slice_set: list[np.ndarray]):
         # Randomly select a slice from self.slice_set and replace it with a random slice from slice_set
-        self.slice_set[np.random.randint(len(self.slice_set))] = np.random.choice(len(slice_set))
+        # TODO replace, random.choice returns indices, not slices
+        rng_slice = np.random.choice(len(slice_set))
+        self.slice_set[np.random.randint(len(self.slice_set))] = slice_set[rng_slice]
 
     def crossover(self, other: Specimen) -> (Specimen, Specimen):
         # Perform one-point crossover and create two new specimens

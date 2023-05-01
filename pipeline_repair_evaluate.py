@@ -13,7 +13,9 @@ def list_generators() -> list[str]:
     :return: List of paths to all generators
     """
     base_path: str = os.path.join(os.path.curdir, "data")
-    return os.listdir(base_path)
+    files = os.listdir(base_path)
+    files.remove("attempts.csv")
+    return files
 
 
 def benchmark(fn: callable):
