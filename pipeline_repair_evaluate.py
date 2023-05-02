@@ -3,8 +3,10 @@ import os
 import time
 import tracemalloc
 
-from patching import patchers, REPAIR_STAGE_THREADS
+from patching import patchers
 from patching.metrics import metrics
+
+REPAIR_STAGE_THREADS = 8
 
 
 def list_generators() -> list[str]:
@@ -16,27 +18,6 @@ def list_generators() -> list[str]:
     files = os.listdir(base_path)
     files.remove("attempts.csv")
     return files
-
-
-def benchmark(fn: callable):
-    """
-    Decorator to measure the runtime of a function.
-    :param fn: Function to measure
-    :return: Function result and runtime
-    """
-    def wrapper(*args, **kwargs):
-        tracemalloc.start()
-
-        start = time.time()
-        result = fn(*args, **kwargs)
-        end = time.time()
-
-        _, peak = tracemalloc.get_traced_memory()
-
-        tracemalloc.stop()
-
-        return result, end - start, peak
-    return wrapper
 
 
 def save_metrics_to_file(generator_dir: str, data: dict):

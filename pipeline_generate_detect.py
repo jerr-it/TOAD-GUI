@@ -10,13 +10,13 @@ from datetime import datetime
 from py4j.java_gateway import JavaGateway
 
 from GUI import MARIO_AI_PATH
-from patching import GENERATE_STAGE_THREADS
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
 LEVELS_PER_GENERATOR = 5
+GENERATE_STAGE_THREADS = 8
 
 
 def list_generators() -> list[str]:

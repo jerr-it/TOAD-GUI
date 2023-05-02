@@ -319,9 +319,9 @@ def TOAD_GUI():
         gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=False, redirect_stdout=sys.stdout,
                                              redirect_stderr=sys.stderr)
 
+        game = gateway.jvm.engine.core.MarioGame()
         try:
-            game = gateway.jvm.mff.agents.common.AgentMarioGame()
-            agent = gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
+            agent = gateway.jvm.agents.human.Agent()
             while True:
                 result = game.runGame(agent, ''.join(level_obj.ascii_level), 20, 0, True, 30, 2.0)
                 perc = int(result.getCompletionPercentage() * 100)
