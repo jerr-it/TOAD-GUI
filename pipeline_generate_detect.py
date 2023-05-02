@@ -4,7 +4,9 @@ Generates unplayable levels for all generators.
 
 import concurrent.futures
 import os
+import pandas as pd
 
+from datetime import datetime
 from py4j.java_gateway import JavaGateway
 
 from GUI import MARIO_AI_PATH
@@ -14,7 +16,7 @@ from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
-LEVELS_PER_GENERATOR = 10
+LEVELS_PER_GENERATOR = 5
 
 
 def list_generators() -> list[str]:
@@ -82,7 +84,7 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
     return ascii_level, progress, attempts
 
 
-def save_generated_level(level: list[str], progress: float, generator_path: str, number: int = 0):
+def save_generated_level(level: list[str], progress: float, generator_path: str):
     """
     Saves the generated level to a file.
     :param level: Generated level.
@@ -96,7 +98,10 @@ def save_generated_level(level: list[str], progress: float, generator_path: str,
     level_path = os.path.join(os.path.curdir, "data", generator_name)
     os.makedirs(level_path, exist_ok=True)
 
-    level_name = f"level_{generator_name}_{number}.txt"
+    # Create time stamp as year_month_day_hour_minute_second_millisecond
+    time_stamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+
+    level_name = f"level_{generator_name}_{time_stamp}.txt"
     level_path = os.path.join(level_path, level_name)
 
     with open(level_path, "w") as f:
@@ -137,7 +142,7 @@ def pipeline_generate():
             for future in concurrent.futures.as_completed(futures):
                 level, progress, attempts = future.result()
 
-                save_generated_level(level, progress, generator_path, idx)
+                save_generated_level(level, progress, generator_path)
                 print(f"Saved level {idx} for {generator_path} with {attempts} attempts.")
 
                 total_attempts += attempts
@@ -145,13 +150,39 @@ def pipeline_generate():
 
         generator_attempts[generator_path] = total_attempts
 
-    # Save attempts in data/attempts.csv
-    with open(os.path.join(os.path.curdir, "data", "attempts.csv"), "w") as f:
-        # Write header
-        f.write("generator,level,attempts,share\n")
+    # Load attempts from data/attempts.csv or create a new one
+    attempts_path = os.path.join(os.path.curdir, "data", "attempts.csv")
+    if os.path.exists(attempts_path):
+        attempts_df = pd.read_csv(attempts_path)
+    else:
+        attempts_df = pd.DataFrame(columns=["generator", "unplayable", "attempts", "share"])
 
-        for generator_path, total_attempts in generator_attempts.items():
-            f.write(f"{generator_path},{LEVELS_PER_GENERATOR},{total_attempts},{LEVELS_PER_GENERATOR / total_attempts}\n")
+    # Update generator entries with new attempts, unplayable level count and share
+    for generator_path, total_attempts in generator_attempts.items():
+        # Get the row from the csv file or create a new one
+        if generator_path not in attempts_df["generator"].values:
+            attempts_df.loc[len(attempts_df)] = {
+                "generator": generator_path,
+                "unplayable": 0,
+                "attempts": 0,
+                "share": 0.0
+            }
+
+        row = attempts_df.loc[attempts_df["generator"] == generator_path]
+
+        # Update attempts, unplayable and share
+        attempts_df.loc[attempts_df["generator"] == generator_path, "unplayable"] = row["unplayable"] + LEVELS_PER_GENERATOR
+        attempts_df.loc[attempts_df["generator"] == generator_path, "attempts"] = row["attempts"] + total_attempts
+
+        row = attempts_df.loc[attempts_df["generator"] == generator_path]
+
+        attempts_df.loc[attempts_df["generator"] == generator_path, "share"] = row["unplayable"] / row["attempts"]
+
+    # Sort rows by share descending
+    attempts_df = attempts_df.sort_values(by=["share"], ascending=False)
+
+    # Save attempts in data/attempts.csv
+    attempts_df.to_csv(os.path.join(os.path.curdir, "data", "attempts.csv"), index=False)
 
 
 pipeline_generate()
