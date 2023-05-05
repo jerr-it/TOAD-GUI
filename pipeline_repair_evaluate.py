@@ -159,9 +159,7 @@ def repair_level(
                 result = metric["object"].post_hook(original_level, level, fixed_level)
                 metrics_data[0][metric["name"]] = result
 
-    metrics_df = pd.concat(([pd.DataFrame(metrics_data), metrics_df]), ignore_index=True)
-
-    return level_path, metrics_df, level_dict
+    return level_path, pd.DataFrame(metrics_data), level_dict
 
 
 def read_or_create_metrics_csv() -> pd.DataFrame:
@@ -210,7 +208,7 @@ def pipeline_repair_evaluate():
 
             for future in concurrent.futures.as_completed(futures):
                 level_path, new_df, level_dict = future.result()
-                metrics_df = new_df
+                metrics_df = pd.concat([metrics_df, new_df], ignore_index=True)
 
                 for patcher_name, level in level_dict.items():
                     save_patched_level(level_path, patcher_name, level)
