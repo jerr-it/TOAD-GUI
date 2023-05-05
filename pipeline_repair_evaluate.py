@@ -155,7 +155,7 @@ def repair_level(
             progress = mario.evaluate_level(fixed_level)
 
             level_dict[patcher_name] = fixed_level
-            for metric in metrics:
+            for metric in reversed(metrics):
                 result = metric["object"].post_hook(original_level, level, fixed_level)
                 metrics_data[0][metric["name"]] = result
 
@@ -184,7 +184,7 @@ def save_patched_level(level_path: str, patcher_name: str, level: list[str]):
     patched_path = level_path.replace("level", f"patched_{tag}")
     with open(patched_path, "w") as f:
         for row in level:
-            f.write(row)
+            f.write(row + "\n")
 
 
 def pipeline_repair_evaluate():
