@@ -3,7 +3,7 @@ import numpy as np
 from patching.metrics.metric import Metric
 
 
-class PatternVariationChange(Metric):
+class PatternVariationOriginal(Metric):
     def pre_hook(self):
         pass
 
@@ -13,7 +13,33 @@ class PatternVariationChange(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ) -> float:
-        return pattern_variation(fixed_level) - pattern_variation(generated_level)
+        return pattern_variation(original_level)
+
+
+class PatternVariationGenerated(Metric):
+    def pre_hook(self):
+        pass
+
+    def post_hook(
+            self,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
+    ) -> float:
+        return pattern_variation(generated_level)
+
+
+class PatternVariationFixed(Metric):
+    def pre_hook(self):
+        pass
+
+    def post_hook(
+            self,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
+    ) -> float:
+        return pattern_variation(fixed_level)
 
 
 def pattern_variation(level: list[str], kernel_size: int = 3) -> float:
