@@ -5,7 +5,7 @@ from patching.metrics.runtime import Runtime
 from patching.metrics.tpkl import TPKLChange
 
 metrics = [
-    {"name": "Leniency change", "unit": "", "object": LeniencyChange()},
+    # {"name": "Leniency change", "unit": "", "object": LeniencyChange()},
     {"name": "TPKL Change", "unit": "", "object": TPKLChange()},
     {"name": "Pattern variance change", "unit": "", "object": PatternVariationChange()},
     {"name": "Memory", "unit": "B", "object": Memory()},

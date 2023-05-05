@@ -15,7 +15,7 @@ from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
-LEVELS_PER_GENERATOR = 5
+LEVELS_PER_GENERATOR = 8
 GENERATE_STAGE_THREADS = 8
 
 
