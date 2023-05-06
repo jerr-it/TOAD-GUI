@@ -1,7 +1,7 @@
 import numpy as np
 
 from patching.metrics.metric import Metric
-from token_defs import *
+from utils.token_defs import *
 
 """
 Leniency is a metric for estimating the difficulty of a level.
