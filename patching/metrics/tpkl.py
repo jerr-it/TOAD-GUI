@@ -5,11 +5,7 @@ from patching.metrics.metric import Metric
 EPSILON = 1e-8
 
 
-class TPKLChange(Metric):
-    """
-    Calculates the TPKL between the original level and the patched level.
-    """
-
+class TPKLOriginalGenerated(Metric):
     def pre_hook(self):
         pass
 
@@ -19,7 +15,20 @@ class TPKLChange(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ) -> float:
-        return tpkl(original_level, generated_level) - tpkl(original_level, fixed_level)
+        return tpkl(original_level, generated_level)
+
+
+class TPKLOriginalFixed(Metric):
+    def pre_hook(self):
+        pass
+
+    def post_hook(
+            self,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
+    ) -> object:
+        return tpkl(original_level, fixed_level)
 
 
 def tpkl(level_a: list[str] | np.ndarray, level_b: list[str] | np.ndarray, kernel_size: int = 3) -> float:

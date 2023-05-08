@@ -25,5 +25,5 @@ class MarioAI:
         game = self.gateway.jvm.mff.agents.common.AgentMarioGame()
         agent = self.gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
 
-        result = game.runGame(agent, ''.join(level), 20, 0, False, 4000, 2.0)
+        result = game.runGame(agent, '\n'.join(level), 20, 0, False, 4000, 2.0)
         return result.getCompletionPercentage()

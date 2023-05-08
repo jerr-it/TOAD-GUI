@@ -1,20 +1,20 @@
 import numpy as np
 
 from patching.metrics.metric import Metric
-from token_defs import *
+from utils.token_defs import *
+
+"""
+Leniency is a metric for estimating the difficulty of a level.
+Its definitions are all somewhat different:
+Horn et al, Shaker et al, Smith et al
+Generally it assigns a score to a levels components, for example:
+-1 for enemies
++1 for powerups
+...
+"""
 
 
-class LeniencyChange(Metric):
-    """
-    Leniency is a metric for estimating the difficulty of a level.
-    Its definitions are all somewhat different:
-    Horn et al, Shaker et al, Smith et al
-    Generally it assigns a score to a levels components, for example:
-    -1 for enemies
-    +1 for powerups
-    ...
-    """
-
+class LeniencyOriginal(Metric):
     def pre_hook(self):
         pass
 
@@ -24,7 +24,33 @@ class LeniencyChange(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ):
-        return leniency(fixed_level) - leniency(generated_level)
+        return leniency(original_level)
+
+
+class LeniencyGenerated(Metric):
+    def pre_hook(self):
+        pass
+
+    def post_hook(
+            self,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
+    ):
+        return leniency(generated_level)
+
+
+class LeniencyFixed(Metric):
+    def pre_hook(self):
+        pass
+
+    def post_hook(
+            self,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
+    ):
+        return leniency(fixed_level)
 
 
 def leniency(level: list[str]) -> float:

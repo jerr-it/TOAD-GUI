@@ -7,15 +7,14 @@ import os
 import pandas as pd
 
 from datetime import datetime
-from py4j.java_gateway import JavaGateway
 
-from GUI import MARIO_AI_PATH
+from utils.mario_ai import MarioAI
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
-LEVELS_PER_GENERATOR = 5
+LEVELS_PER_GENERATOR = 8
 GENERATE_STAGE_THREADS = 8
 
 
@@ -49,37 +48,27 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
     :param generator: Generator to use.
     :return: (level, progress, number of tries)
     """
-    gateway = JavaGateway.launch_gateway(
-        classpath=MARIO_AI_PATH,
-        die_on_exit=True,
-    )
+    with MarioAI() as mario:
+        scl_h = LEVEL_HEIGHT / generator.reals[-1].shape[-2]
+        scl_w = LEVEL_WIDTH / generator.reals[-1].shape[-1]
 
-    scl_h = LEVEL_HEIGHT / generator.reals[-1].shape[-2]
-    scl_w = LEVEL_WIDTH / generator.reals[-1].shape[-1]
+        attempts = 0
 
-    attempts = 0
+        ascii_level: list[str] = []
+        progress: float = 1.0
 
-    ascii_level: list[str] = []
-    progress: float = 1.0
+        while 1.0 - progress < 0.01:
+            level, scales, noises = generate_sample(
+                generator.Gs, generator.Zs, generator.reals,
+                generator.NoiseAmp, generator.num_layers, generator.token_list,
+                scale_h=scl_w, scale_v=scl_h
+            )
+            attempts += 1
 
-    while 1.0 - progress < 0.01:
-        game = gateway.jvm.mff.agents.common.AgentMarioGame()
-        agent = gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
+            ascii_level = one_hot_to_ascii_level(level, generator.token_list)
+            ascii_level = place_a_mario_token(ascii_level)
 
-        level, scales, noises = generate_sample(
-            generator.Gs, generator.Zs, generator.reals,
-            generator.NoiseAmp, generator.num_layers, generator.token_list,
-            scale_h=scl_w, scale_v=scl_h
-        )
-        attempts += 1
-
-        ascii_level = one_hot_to_ascii_level(level, generator.token_list)
-        ascii_level = place_a_mario_token(ascii_level)
-
-        progress = evaluate_level(game, agent, ascii_level)
-
-    gateway.java_process.kill()
-    gateway.shutdown()
+            progress = mario.evaluate_level(ascii_level)
 
     return ascii_level, progress, attempts
 
@@ -108,21 +97,6 @@ def save_generated_level(level: list[str], progress: float, generator_path: str)
         f.write(f"{progress}\n")
         for row in level:
             f.write(row)
-
-
-def evaluate_level(game, agent, level: list[str]) -> float:
-    """
-    Evaluates the level.
-    :param game: JavaGateway object of the Mario game.
-    :param agent: JavaGateway object of the agent.
-    :param level: Super Mario level defined as a list of strings. (Row-wise)
-    :return: Progress in %
-    """
-    # Run the game: agent, level, time limit, mario state, visual output, fps, scale
-    result = game.runGame(agent, ''.join(level), 20, 0, False, 4000, 2.0)
-    progress = result.getCompletionPercentage()
-
-    return progress
 
 
 def pipeline_generate():
