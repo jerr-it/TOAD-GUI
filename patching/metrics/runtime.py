@@ -11,6 +11,13 @@ class Runtime(Metric):
     def pre_hook(self):
         self.start = time.time()
 
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
+        pass
+
     def post_hook(
             self,
             original_level: list[str],

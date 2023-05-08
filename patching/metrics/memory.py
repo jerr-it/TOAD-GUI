@@ -8,6 +8,13 @@ class Memory(Metric):
         tracemalloc.clear_traces()
         tracemalloc.start()
 
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
+        pass
+
     def post_hook(
             self,
             original_level: list[str],

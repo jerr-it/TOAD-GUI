@@ -9,6 +9,13 @@ class TPKLOriginalGenerated(Metric):
     def pre_hook(self):
         pass
 
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
+        pass
+
     def post_hook(
             self,
             original_level: list[str],
@@ -20,6 +27,13 @@ class TPKLOriginalGenerated(Metric):
 
 class TPKLOriginalFixed(Metric):
     def pre_hook(self):
+        pass
+
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
         pass
 
     def post_hook(

@@ -5,6 +5,7 @@ import pandas as pd
 
 from patching import patchers
 from patching.metrics import metrics
+from utils.level_utils import place_a_mario_token
 from utils.mario_ai import MarioAI
 
 REPAIR_STAGE_THREADS = 8
@@ -111,6 +112,17 @@ def calculate_broken_range(
     )
 
 
+def check_mario_token(level: list[str]) -> list[str]:
+    m_exists = False
+    for line in level:
+        if 'M' in line:
+            m_exists = True
+            break
+    if not m_exists:
+        return place_a_mario_token(level)
+    return level
+
+
 def repair_level(
         level_path: str,
         generator_path: str,
@@ -133,8 +145,6 @@ def repair_level(
 
     original_level = load_original_level(generator_path)
 
-    broken_range = calculate_broken_range(progress, level_width, level_height)
-
     with MarioAI() as mario:
         metrics_data = []
         level_dict = {}
@@ -150,9 +160,18 @@ def repair_level(
             for metric in metrics:
                 metric["object"].pre_hook()
 
-            # TODO loop until playable
-            fixed_level: list[str] = patcher.patch(original_level, level, broken_range)
-            progress = mario.evaluate_level(fixed_level)
+            fixed_level: list[str]
+            while progress < 0.99:
+                broken_range = calculate_broken_range(progress, level_width, level_height)
+
+                fixed_level = check_mario_token(
+                    patcher.patch(original_level, level, broken_range)
+                )
+
+                progress = mario.evaluate_level(fixed_level)
+
+                for metric in metrics:
+                    metric["object"].iter_hook(progress, fixed_level)
 
             level_dict[patcher_name] = fixed_level
             for metric in reversed(metrics):
