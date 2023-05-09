@@ -19,6 +19,7 @@ class Pattern:
     It's a two-dimensional array of objects.
     Objects need to be comparable.
     """
+
     def __init__(self, data):
         self.data: np.ndarray = np.array(data)
         self.rows: int = self.data.shape[0]
@@ -31,6 +32,26 @@ class Pattern:
 
     def __eq__(self, other: Pattern) -> bool:
         return (self.data == other.data).all()
+
+    def equals_ignore(self, other: Pattern, symbol) -> bool:
+        """
+        Checks if the pattern is equal to another pattern, ignoring a given symbol.
+        :param other: The other pattern to compare to.
+        :param symbol: The symbol to ignore in the comparison.
+        :return: True if the patterns are equal, ignoring the given symbol.
+        """
+        # False if patterns aren't the same shape
+        if self.data.shape != other.data.shape:
+            return False
+
+        # False if patterns aren't equal, ignoring the given symbol
+        for row in range(self.rows):
+            for column in range(self.columns):
+                # If the element is not the symbol, check if it is equal
+                if self.data[row, column] != symbol and self.data[row, column] != other.data[row, column]:
+                    return False
+
+        return True
 
     def center_value(self) -> object:
         """
@@ -52,7 +73,8 @@ class Pattern:
         Checks if the pattern overlaps with another pattern in a given direction.
         """
         if self.data.shape != other.data.shape:
-            raise Exception("Patterns must have the same shape. Got " + str(self.data.shape) + " and " + str(other.data.shape))
+            raise Exception(
+                "Patterns must have the same shape. Got " + str(self.data.shape) + " and " + str(other.data.shape))
 
         match direction:
             case Direction.UP:
@@ -63,8 +85,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.rows / 2)
 
                 return (
-                    self.data[:half_idx, :] ==
-                    other.data[half_idx-1:, :]
+                        self.data[:half_idx, :] ==
+                        other.data[half_idx - 1:, :]
                 ).all()
 
             case Direction.RIGHT:
@@ -77,8 +99,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.columns / 2)
 
                 return (
-                    self.data[:, half_idx-1:] ==
-                    other.data[:, :half_idx]
+                        self.data[:, half_idx - 1:] ==
+                        other.data[:, :half_idx]
                 ).all()
 
             case Direction.DOWN:
@@ -89,8 +111,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.rows / 2)
 
                 return (
-                    self.data[half_idx-1:, :] ==
-                    other.data[:half_idx, :]
+                        self.data[half_idx - 1:, :] ==
+                        other.data[:half_idx, :]
                 ).all()
 
             case Direction.LEFT:
@@ -103,8 +125,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.columns / 2)
 
                 return (
-                    self.data[:, :half_idx] ==
-                    other.data[:, half_idx-1:]
+                        self.data[:, :half_idx] ==
+                        other.data[:, half_idx - 1:]
                 ).all()
 
         return False
