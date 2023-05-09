@@ -18,6 +18,13 @@ class LeniencyOriginal(Metric):
     def pre_hook(self):
         pass
 
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
+        pass
+
     def post_hook(
             self,
             original_level: list[str],
@@ -31,6 +38,13 @@ class LeniencyGenerated(Metric):
     def pre_hook(self):
         pass
 
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
+        pass
+
     def post_hook(
             self,
             original_level: list[str],
@@ -42,6 +56,13 @@ class LeniencyGenerated(Metric):
 
 class LeniencyFixed(Metric):
     def pre_hook(self):
+        pass
+
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
         pass
 
     def post_hook(

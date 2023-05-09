@@ -23,8 +23,8 @@ class WFCPatcher(Patcher):
         patched_section = level_adapter.result
         x_range, y_range = broken_range
 
-        # Replace the broken section with the repaired section
-        for y in range(y_range[0], y_range[1]):
-            level[y] = level[y][:x_range[0]] + "".join(patched_section[y-y_range[0]]) + level[y][x_range[1]:]
+        for row in range(y_range[0], y_range[1]):
+            row_section = "".join(patched_section[row-y_range[0]])
+            level[row] = level[row][:x_range[0]] + row_section + level[row][x_range[1]:]
 
         return level

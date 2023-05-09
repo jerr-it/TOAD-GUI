@@ -13,12 +13,11 @@ class WaveFunction:
 
             self.patterns = self.pattern_scanner.get_full_pattern_set()
 
-            self.entropy = 0.0
-            self.calculate_entropy()
+            self.entropy = self.calculate_entropy()
         else:
             self.patterns = {inp}
 
-            self.entropy = -1
+            self.entropy = 1e-10
 
     def __hash__(self) -> int:
         return hash(self.patterns)
@@ -36,7 +35,7 @@ class WaveFunction:
     def apply_constraints(self, constraints: set[Pattern]) -> bool:
         old_patterns = self.patterns.copy()
         self.patterns.intersection_update(constraints)
-        self.calculate_entropy()
+        self.entropy = self.calculate_entropy()
 
         return self.patterns != old_patterns
 

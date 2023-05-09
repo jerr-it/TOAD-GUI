@@ -19,6 +19,7 @@ class Pattern:
     It's a two-dimensional array of objects.
     Objects need to be comparable.
     """
+
     def __init__(self, data):
         self.data: np.ndarray = np.array(data)
         self.rows: int = self.data.shape[0]
@@ -72,7 +73,8 @@ class Pattern:
         Checks if the pattern overlaps with another pattern in a given direction.
         """
         if self.data.shape != other.data.shape:
-            raise Exception("Patterns must have the same shape. Got " + str(self.data.shape) + " and " + str(other.data.shape))
+            raise Exception(
+                "Patterns must have the same shape. Got " + str(self.data.shape) + " and " + str(other.data.shape))
 
         match direction:
             case Direction.UP:
@@ -83,8 +85,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.rows / 2)
 
                 return (
-                    self.data[:half_idx, :] ==
-                    other.data[half_idx-1:, :]
+                        self.data[:half_idx, :] ==
+                        other.data[half_idx - 1:, :]
                 ).all()
 
             case Direction.RIGHT:
@@ -97,8 +99,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.columns / 2)
 
                 return (
-                    self.data[:, half_idx-1:] ==
-                    other.data[:, :half_idx]
+                        self.data[:, half_idx - 1:] ==
+                        other.data[:, :half_idx]
                 ).all()
 
             case Direction.DOWN:
@@ -109,8 +111,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.rows / 2)
 
                 return (
-                    self.data[half_idx-1:, :] ==
-                    other.data[:half_idx, :]
+                        self.data[half_idx - 1:, :] ==
+                        other.data[:half_idx, :]
                 ).all()
 
             case Direction.LEFT:
@@ -123,8 +125,8 @@ class Pattern:
                 half_idx: int = math.ceil(self.columns / 2)
 
                 return (
-                    self.data[:, :half_idx] ==
-                    other.data[:, half_idx-1:]
+                        self.data[:, :half_idx] ==
+                        other.data[:, half_idx - 1:]
                 ).all()
 
         return False

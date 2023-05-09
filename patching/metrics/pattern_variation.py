@@ -7,6 +7,13 @@ class PatternVariationOriginal(Metric):
     def pre_hook(self):
         pass
 
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
+        pass
+
     def post_hook(
             self,
             original_level: list[str],
@@ -20,6 +27,13 @@ class PatternVariationGenerated(Metric):
     def pre_hook(self):
         pass
 
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
+        pass
+
     def post_hook(
             self,
             original_level: list[str],
@@ -31,6 +45,13 @@ class PatternVariationGenerated(Metric):
 
 class PatternVariationFixed(Metric):
     def pre_hook(self):
+        pass
+
+    def iter_hook(
+        self,
+        progress: float,
+        fixed_level: list[str],
+    ):
         pass
 
     def post_hook(

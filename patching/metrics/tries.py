@@ -1,14 +1,19 @@
+from patching.metrics.metric import Metric
 
-class Metric:
+
+class Tries(Metric):
+    def __init__(self):
+        self.tries: int = 1
+
     def pre_hook(self):
-        raise NotImplementedError
+        pass
 
     def iter_hook(
         self,
         progress: float,
         fixed_level: list[str],
     ):
-        raise NotImplementedError
+        self.tries += 1
 
     def post_hook(
         self,
@@ -16,4 +21,6 @@ class Metric:
         generated_level: list[str],
         fixed_level: list[str],
     ) -> object:
-        raise NotImplementedError
+        ret = self.tries
+        self.tries = 1
+        return ret
