@@ -170,16 +170,22 @@ def repair_level(
                         patcher.patch(original_level.copy(), generated_level.copy(), broken_range)
                     )
 
-                    current_progress = mario.evaluate_level(fixed_level)
+                    mario_result = mario.evaluate_level(fixed_level)
+                    current_progress = mario_result.getCompletionPercentage()
                 except Exception as e:
-                    print(e)
+                    print(f"Patcher threw exception: {e}")
 
                 for metric in metrics:
-                    metric["object"].iter_hook(current_progress, fixed_level.copy())
+                    metric["object"].iter_hook(mario_result, fixed_level.copy())
 
             level_dict[patcher_name] = fixed_level.copy()
             for metric in reversed(metrics):
-                result = metric["object"].post_hook(original_level.copy(), generated_level.copy(), fixed_level.copy())
+                result = metric["object"].post_hook(
+                    mario_result,
+                    original_level.copy(),
+                    generated_level.copy(),
+                    fixed_level.copy()
+                )
                 metrics_data[0][metric["name"]] = result
 
     return level_path, pd.DataFrame(metrics_data), level_dict

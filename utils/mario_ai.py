@@ -1,3 +1,4 @@
+import py4j.java_gateway
 from py4j.java_gateway import JavaGateway
 
 from GUI import MARIO_AI_PATH
@@ -21,9 +22,8 @@ class MarioAI:
         self.gateway.java_process.kill()
         self.gateway.shutdown()
 
-    def evaluate_level(self, level: list[str]) -> float:
+    def evaluate_level(self, level: list[str]) -> py4j.java_gateway.JavaObject:
         game = self.gateway.jvm.mff.agents.common.AgentMarioGame()
         agent = self.gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
 
-        result = game.runGame(agent, '\n'.join(level), 30, 0, False, 4000, 2.0)
-        return result.getCompletionPercentage()
+        return game.runGame(agent, '\n'.join(level), 30, 0, False, 4000, 2.0)
