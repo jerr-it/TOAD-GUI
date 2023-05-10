@@ -223,7 +223,7 @@ def pipeline_repair_evaluate():
         level_file_count: int = len(level_files)
 
         level_idx = 1
-        with concurrent.futures.ThreadPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
             futures = [
                 executor.submit(repair_level, level_path, generator_path, metrics_df)
                 for level_path in level_files
