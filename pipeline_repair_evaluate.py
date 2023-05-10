@@ -139,9 +139,9 @@ def repair_level(
         dict of levels fixed (one per patcher)
     )
     """
-    level, progress = parse_broken_level(level_path)
-    level_width: int = len(level[0])
-    level_height: int = len(level)
+    generated_level, progress = parse_broken_level(level_path)
+    level_width: int = len(generated_level[0])
+    level_height: int = len(generated_level)
 
     original_level = load_original_level(generator_path)
 
@@ -161,21 +161,25 @@ def repair_level(
                 metric["object"].pre_hook()
 
             fixed_level: list[str]
-            while progress < 0.99:
-                broken_range = calculate_broken_range(progress, level_width, level_height)
+            current_progress = progress
+            while current_progress < 0.99:
+                broken_range = calculate_broken_range(current_progress, level_width, level_height)
 
-                fixed_level = check_mario_token(
-                    patcher.patch(original_level, level, broken_range)
-                )
+                try:
+                    fixed_level = check_mario_token(
+                        patcher.patch(original_level.copy(), generated_level.copy(), broken_range)
+                    )
 
-                progress = mario.evaluate_level(fixed_level)
+                    current_progress = mario.evaluate_level(fixed_level)
+                except Exception as e:
+                    print(e)
 
                 for metric in metrics:
-                    metric["object"].iter_hook(progress, fixed_level)
+                    metric["object"].iter_hook(current_progress, fixed_level.copy())
 
-            level_dict[patcher_name] = fixed_level
+            level_dict[patcher_name] = fixed_level.copy()
             for metric in reversed(metrics):
-                result = metric["object"].post_hook(original_level, level, fixed_level)
+                result = metric["object"].post_hook(original_level.copy(), generated_level.copy(), fixed_level.copy())
                 metrics_data[0][metric["name"]] = result
 
     return level_path, pd.DataFrame(metrics_data), level_dict
