@@ -31,7 +31,7 @@ class Pattern:
         return hash(self.data.tobytes())
 
     def __eq__(self, other: Pattern) -> bool:
-        return (self.data == other.data).all()
+        return np.array_equal(self.data, other.data)
 
     def equals_ignore(self, other: Pattern, symbol) -> bool:
         """

@@ -17,7 +17,7 @@ class WaveFunction:
         else:
             self.patterns = {inp}
 
-            self.entropy = 1e-10
+            self.entropy = -1
 
     def __hash__(self) -> int:
         return hash(self.patterns)
