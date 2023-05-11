@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import sys
 
 import pandas as pd
 
@@ -160,20 +161,20 @@ def repair_level(
             for metric in metrics:
                 metric["object"].pre_hook()
 
-            fixed_level: list[str]
+            fixed_level: list[str] = generated_level.copy()
             current_progress = progress
             while current_progress < 0.99:
                 broken_range = calculate_broken_range(current_progress, level_width, level_height)
 
                 try:
                     fixed_level = check_mario_token(
-                        patcher.patch(original_level.copy(), generated_level.copy(), broken_range)
+                        patcher.patch(original_level.copy(), fixed_level, broken_range)
                     )
 
                     mario_result = mario.evaluate_level(fixed_level)
                     current_progress = mario_result.getCompletionPercentage()
                 except Exception as e:
-                    print(f"Patcher threw exception: {e}")
+                    print(f"Patcher threw exception: {e}", file=sys.stderr)
 
                 for metric in metrics:
                     metric["object"].iter_hook(mario_result, fixed_level.copy())
