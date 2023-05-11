@@ -3,10 +3,7 @@ import py4j.java_gateway
 from patching.metrics.metric import Metric
 
 
-class Tries(Metric):
-    def __init__(self):
-        self.tries: int = 0
-
+class Coins(Metric):
     def pre_hook(self):
         pass
 
@@ -15,7 +12,7 @@ class Tries(Metric):
         mario_result: py4j.java_gateway.JavaObject,
         fixed_level: list[str],
     ):
-        self.tries += 1
+        pass
 
     def post_hook(
         self,
@@ -24,6 +21,4 @@ class Tries(Metric):
         generated_level: list[str],
         fixed_level: list[str],
     ) -> object:
-        ret = self.tries
-        self.tries = 0
-        return ret
+        return mario_result.getCurrentCoins()
