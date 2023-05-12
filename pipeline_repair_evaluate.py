@@ -1,6 +1,7 @@
 import concurrent.futures
 import os
 import sys
+import time
 
 import pandas as pd
 
@@ -155,7 +156,6 @@ def repair_level(
                 print(f"Skipping {patcher_name} for {level_path}")
                 continue
 
-            print(f"Applying patcher {patcher_name} to {level_path}")
             metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
 
             for metric in metrics:
@@ -174,7 +174,7 @@ def repair_level(
                     mario_result = mario.evaluate_level(fixed_level)
                     current_progress = mario_result.getCompletionPercentage()
                 except Exception as e:
-                    print(f"Patcher threw exception: {e}", file=sys.stderr)
+                    print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=sys.stderr)
 
                 for metric in metrics:
                     metric["object"].iter_hook(mario_result, fixed_level.copy())
@@ -215,37 +215,57 @@ def save_patched_level(level_path: str, patcher_name: str, level: list[str]):
             f.write(row + "\n")
 
 
+def calculate_eta(times: list[float], remaining: int) -> str:
+    average = sum(times) / len(times)
+    eta = remaining * average
+    return time.strftime("%H:%M:%S", time.gmtime(eta))
+
+
 def pipeline_repair_evaluate():
     metrics_df = read_or_create_metrics_csv()
 
     generators = list_generators()
-    generator_count = len(generators)
 
+    level_list = []
+
+    print("Gathering levels...")
     for idx, generator_name in enumerate(generators):
-        print(f"Fixing levels in {generator_name} ({idx+1}/{generator_count})")
-
         generator_path: str = os.path.join(os.path.curdir, "data", generator_name)
 
         level_files: list[str] = list_levels(generator_path)
-        level_file_count: int = len(level_files)
 
-        level_idx = 1
-        with concurrent.futures.ProcessPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
-            futures = [
-                executor.submit(repair_level, level_path, generator_path, metrics_df)
-                for level_path in level_files
-            ]
+        for level_file in level_files:
+            level_list.append((level_file, generator_path))
 
-            for future in concurrent.futures.as_completed(futures):
-                level_path, new_df, level_dict = future.result()
-                metrics_df = pd.concat([metrics_df, new_df], ignore_index=True)
+    level_idx = 1
+    level_count = len(level_list)
 
-                for patcher_name, level in level_dict.items():
-                    save_patched_level(level_path, patcher_name, level)
+    print("Starting repair process...")
+    start_counter = time.time()
+    times = []
+    with concurrent.futures.ProcessPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
+        futures = [
+            executor.submit(repair_level, level_path, generator_path, metrics_df)
+            for level_path, generator_path in level_list
+        ]
 
-                metrics_df.to_csv(os.path.join(os.path.curdir, "data", "metrics.csv"), index=False)
-                print(f"Completed level ({level_idx}/{level_file_count}) for {generator_name}")
-                level_idx += 1
+        for future in concurrent.futures.as_completed(futures):
+            level_path, new_df, level_dict = future.result()
+            metrics_df = pd.concat([metrics_df, new_df], ignore_index=True)
+
+            for patcher_name, level in level_dict.items():
+                save_patched_level(level_path, patcher_name, level)
+
+            metrics_df.to_csv(os.path.join(os.path.curdir, "data", "metrics.csv"), index=False)
+
+            end_counter = time.time()
+            times.append(end_counter - start_counter)
+            start_counter = end_counter
+            level_idx += 1
+            print(f"Completed level {level_idx} of {level_count} | ETA: {calculate_eta(times, level_count - level_idx)}")
 
 
+start = time.time()
 pipeline_repair_evaluate()
+time_str = time.strftime("%H:%M:%S", time.gmtime(time.time() - start))
+print(f"Fixed levels in {time_str}")
