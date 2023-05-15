@@ -323,7 +323,7 @@ def TOAD_GUI():
         try:
             agent = gateway.jvm.agents.human.Agent()
             while True:
-                result = game.runGame(agent, ''.join(level_obj.ascii_level), 20, 0, True, 30, 2.0)
+                result = game.runGame(agent, ''.join(level_obj.ascii_level), 200, 0, True, 30, 2.0)
                 perc = int(result.getCompletionPercentage() * 100)
                 error_msg.set("Level Played. Completion Percentage: %d%%" % perc)
         except Exception as e:

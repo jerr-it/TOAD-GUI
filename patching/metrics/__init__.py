@@ -1,10 +1,10 @@
 from patching.metrics.coins import Coins
 from patching.metrics.collected_mushrooms import CollectedMushrooms
+from patching.metrics.difficulty import DifficultyOriginal, DifficultyGenerated, DifficultyFixed
 from patching.metrics.hits import Hits
 from patching.metrics.jump_air_time import JumpAirTime
 from patching.metrics.jump_length import JumpLength
 from patching.metrics.jumps import Jumps
-from patching.metrics.leniency import LeniencyOriginal, LeniencyGenerated, LeniencyFixed
 from patching.metrics.lives import Lives
 from patching.metrics.memory import Memory
 from patching.metrics.pattern_variation import PatternVariationOriginal, PatternVariationGenerated, PatternVariationFixed
@@ -21,9 +21,9 @@ metrics = [
     {"name": "Pattern Variation Generated", "unit": "", "object": PatternVariationGenerated()},
     {"name": "Pattern Variation Fixed", "unit": "", "object": PatternVariationFixed()},
     {"name": "Tries", "unit": "", "object": Tries()},
-    # {"name": "Leniency Original", "unit": "", "object": LeniencyOriginal()},
-    # {"name": "Leniency Generated", "unit": "", "object": LeniencyGenerated()},
-    # {"name": "Leniency Fixed", "unit": "", "object": LeniencyFixed()},
+    {"name": "Difficulty Original", "unit": "", "object": DifficultyOriginal()},
+    {"name": "Difficulty Generated", "unit": "", "object": DifficultyGenerated()},
+    {"name": "Difficulty Fixed", "unit": "", "object": DifficultyFixed()},
     {"name": "Remaining time", "unit": "s", "object": RemainingTime()},
     {"name": "Total kills", "unit": "", "object": TotalKills()},
     {"name": "Coins", "unit": "", "object": Coins()},

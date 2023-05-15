@@ -15,7 +15,7 @@ Generally it assigns a score to a levels components, for example:
 """
 
 
-class LeniencyOriginal(Metric):
+class DifficultyOriginal(Metric):
     def pre_hook(self):
         pass
 
@@ -33,10 +33,10 @@ class LeniencyOriginal(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ):
-        return leniency(original_level)
+        return difficulty(original_level, mario_result)
 
 
-class LeniencyGenerated(Metric):
+class DifficultyGenerated(Metric):
     def pre_hook(self):
         pass
 
@@ -54,10 +54,10 @@ class LeniencyGenerated(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ):
-        return leniency(generated_level)
+        return difficulty(generated_level, mario_result)
 
 
-class LeniencyFixed(Metric):
+class DifficultyFixed(Metric):
     def pre_hook(self):
         pass
 
@@ -75,17 +75,19 @@ class LeniencyFixed(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ):
-        return leniency(fixed_level)
+        return difficulty(fixed_level, mario_result)
 
 
-def leniency(level: list[str]) -> float:
-    # Shaker et al:
-    # Attribute, Weight:
-    # Gap count, -0.5
-    # Average gap width, -1
-    # Enemy count, -1
-    # Cannon / Bullet Bill count, -0.5
-    # Powerup count, +1
+def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, levelp: str) -> float:
+    """
+    Consists of a static and a dynamic evaluation.
+    Static evaluation is based on data gathered by analysing the level itself.
+    Dynamic evaluation is based on data gathered by the Mario AI Framework agent playing the level
+    :param level: Level to analyse
+    :param mario_result: Data gathered by the AI agent, type is MarioResult (see Mario AI Framework)
+    :return: Difficulty score, higher meaning more difficult
+    """
+    # Static evaluation
 
     # Convert level to numpy ndarray
     level = np.array([list(row) for row in level])
@@ -104,10 +106,11 @@ def leniency(level: list[str]) -> float:
     # Iterate all vertical columns
     current_gap_width: int = 0
 
-    gap_count: int = 0
-    average_gap_width: float = 0.0
+    static_gap_count: int = 0
+    static_average_gap_width: float = 0.0
     enemy_count: int = 0
-    cannon_tube_count: int = 0
+    cannon_count: int = 0
+    tube_count: int = 0
     powerup_count: int = 0
 
     for column in range(width - 1):
@@ -115,24 +118,73 @@ def leniency(level: list[str]) -> float:
             current_gap_width += 1
         else:
             if current_gap_width > 0:
-                gap_count += 1
-                average_gap_width += current_gap_width
+                static_gap_count += 1
+                static_average_gap_width += current_gap_width
                 current_gap_width = 0
 
         enemy_count += count_enemies(level[:, column])
-        cannon_tube_count += count_cannon(level[:, column]) + count_tubes((level[:, column], level[:, column + 1]))
+        cannon_count += count_cannon(level[:, column])
+        tube_count += count_tubes((level[:, column], level[:, column + 1]))
+        powerup_count += count_powerups(level[:, column])
 
-    average_gap_width /= gap_count
+    # Dynamic evaluation
 
-    # Normalize return value to [0, 1]
-    le = gap_count * -0.5 + \
-         average_gap_width * -1 + \
-         enemy_count * -1 + \
-         cannon_tube_count * -0.5 + \
-         powerup_count * 1 \
-         / (gap_count + average_gap_width + enemy_count + cannon_tube_count + powerup_count)
+    # Find the gaps mario *actually* jumped over
+    # 10 is the maximum gap width mario can handle
+    # 5 is the highest mario can jump
+    jumps = mario_result.getJumps()
+    dynamic_gap_widths = []
+    print("\nChecking level: " + levelp)
+    for jump in jumps:
+        y_start = int(jump.getStart().getMarioY() / 16)
+        y_end = int(jump.getEnd().getMarioY() / 16) - 1
 
-    return le
+        y_pos = y_start - 3 if y_start > y_end else y_end - 5
+
+        x_start = int(jump.getStart().getMarioX() / 16) - 1
+        x_end = int(jump.getEnd().getMarioX() / 16) + 1
+
+        # Check downwards from all mario positions during the jump
+        # to check if he's jumping an actual gap
+        gap_length = 0
+        for x in range(x_start, x_end):
+            is_gap = True
+            for y in range(y_pos, level.shape[0]):
+                if level[y][x] not in NON_BLOCKS:
+                    is_gap = False
+                    break
+                level[y][x] = "x"
+
+            if is_gap:
+                gap_length += 1
+            else:
+                if gap_length > 0:
+                    dynamic_gap_widths.append(gap_length)
+                    gap_length = 0
+
+    # Every jump longer than 5 blocks width over a gap is considered a difficult jump
+    difficult_gap_threshold = 5
+    easy_gap_widths = list(filter(lambda w: w > difficult_gap_threshold, dynamic_gap_widths))
+    difficult_gap_widths = list(filter(lambda w: w <= difficult_gap_threshold, dynamic_gap_widths))
+
+    hurts = mario_result.getMarioNumHurts()
+    fall_kills = mario_result.getKillsByFall()
+    collected_powerups = \
+        mario_result.getCurrentLives() \
+        + mario_result.getNumCollectedMushrooms() \
+        + mario_result.getNumCollectedFireflower()
+
+    score = static_gap_count * static_average_gap_width * 0.25 \
+        + sum(easy_gap_widths) * 0.5 \
+        + sum(difficult_gap_widths) * 2.0 \
+        + (enemy_count - hurts - fall_kills) \
+        + hurts * 2.0 \
+        + tube_count * 2 \
+        + cannon_count * 2.5 \
+        - (powerup_count - collected_powerups) \
+        - collected_powerups * 3.0
+
+    return score / width
 
 
 def count_enemies(column: np.ndarray) -> int:
@@ -170,7 +222,7 @@ def count_tubes(columns: tuple[np.ndarray, np.ndarray]) -> int:
     # Can at most be 1 per 2-pair of columns
     tubes: int = 0
     for row in range(columns[0].shape[0]):
-        if columns[row][0] == FLOWER_TUBE and columns[row][1] == FLOWER_TUBE:
+        if columns[0][row] == FLOWER_TUBE and columns[1][row] == FLOWER_TUBE:
             tubes += 1
             break
 
