@@ -67,10 +67,21 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
 
             ascii_level = one_hot_to_ascii_level(level, generator.token_list)
             ascii_level = place_a_mario_token(ascii_level)
+            ascii_level = remove_newlines(ascii_level)
 
-            progress = mario.evaluate_level(ascii_level)
+            result = mario.evaluate_level(ascii_level)
+            progress = result.getCompletionPercentage()
 
     return ascii_level, progress, attempts
+
+
+def remove_newlines(level: list[str]) -> list[str]:
+    lvl = []
+
+    for line in level:
+        lvl.append(line.rstrip())
+
+    return lvl
 
 
 def save_generated_level(level: list[str], progress: float, generator_path: str):
@@ -96,14 +107,14 @@ def save_generated_level(level: list[str], progress: float, generator_path: str)
     with open(level_path, "w") as f:
         f.write(f"{progress}\n")
         for row in level:
-            f.write(row)
+            f.write(row + "\n")
 
 
 def pipeline_generate():
     generator_attempts = {}
     for generator_path in list_generators():
         total_attempts = 0
-        with concurrent.futures.ThreadPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
             futures = [
                 executor.submit(
                     generate_unplayable_level,
