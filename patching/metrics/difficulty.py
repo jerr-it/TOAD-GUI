@@ -140,8 +140,8 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
 
         y_pos = y_start - 3 if y_start > y_end else y_end - 5
 
-        x_start = int(jump.getStart().getMarioX() / 16) - 1
-        x_end = int(jump.getEnd().getMarioX() / 16) + 1
+        x_start = max(int(jump.getStart().getMarioX() / 16) - 1, 0)
+        x_end = min(int(jump.getEnd().getMarioX() / 16) + 1, width)
 
         # Check downwards from all mario positions during the jump
         # to check if he's jumping an actual gap

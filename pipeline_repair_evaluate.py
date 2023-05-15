@@ -19,7 +19,10 @@ def list_generators() -> list[str]:
     :return: List of paths to all generators
     """
     files: list[str] = []
+
     basepath: str = os.path.join(os.path.curdir, "data")
+    if not os.path.exists(basepath):
+        os.mkdir(basepath)
 
     with os.scandir(basepath) as it:
         for entry in it:
@@ -156,6 +159,7 @@ def repair_level(
                 print(f"Skipping {patcher_name} for {level_path}")
                 continue
 
+            print(f"Applying {patcher_name} to {level_path}")
             metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
 
             for metric in metrics:
