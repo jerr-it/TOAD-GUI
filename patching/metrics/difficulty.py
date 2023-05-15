@@ -78,7 +78,7 @@ class DifficultyFixed(Metric):
         return difficulty(fixed_level, mario_result)
 
 
-def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, levelp: str) -> float:
+def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> float:
     """
     Consists of a static and a dynamic evaluation.
     Static evaluation is based on data gathered by analysing the level itself.
@@ -134,7 +134,6 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, lev
     # 5 is the highest mario can jump
     jumps = mario_result.getJumps()
     dynamic_gap_widths = []
-    print("\nChecking level: " + levelp)
     for jump in jumps:
         y_start = int(jump.getStart().getMarioY() / 16)
         y_end = int(jump.getEnd().getMarioY() / 16) - 1
