@@ -106,8 +106,7 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
     # Iterate all vertical columns
     current_gap_width: int = 0
 
-    static_gap_count: int = 0
-    static_average_gap_width: float = 0.0
+    static_gap_widths = []
     enemy_count: int = 0
     cannon_count: int = 0
     tube_count: int = 0
@@ -118,8 +117,7 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
             current_gap_width += 1
         else:
             if current_gap_width > 0:
-                static_gap_count += 1
-                static_average_gap_width += current_gap_width
+                static_gap_widths.append(current_gap_width)
                 current_gap_width = 0
 
         enemy_count += count_enemies(level[:, column])
@@ -161,11 +159,6 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
                     dynamic_gap_widths.append(gap_length)
                     gap_length = 0
 
-    # Every jump longer than 5 blocks width over a gap is considered a difficult jump
-    difficult_gap_threshold = 5
-    easy_gap_widths = list(filter(lambda w: w > difficult_gap_threshold, dynamic_gap_widths))
-    difficult_gap_widths = list(filter(lambda w: w <= difficult_gap_threshold, dynamic_gap_widths))
-
     hurts = mario_result.getMarioNumHurts()
     fall_kills = mario_result.getKillsByFall()
     collected_powerups = \
@@ -173,17 +166,20 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
         + mario_result.getNumCollectedMushrooms() \
         + mario_result.getNumCollectedFireflower()
 
-    score = static_gap_count * static_average_gap_width * 0.25 \
-        + sum(easy_gap_widths) * 0.5 \
-        + sum(difficult_gap_widths) * 2.0 \
-        + (enemy_count - hurts - fall_kills) \
-        + hurts * 2.0 \
-        + tube_count * 2 \
-        + cannon_count * 2.5 \
-        - (powerup_count - collected_powerups) \
-        - collected_powerups * 3.0
+    static_gap_avg = sum(static_gap_widths) / (1 + len(static_gap_widths))
+    dynamic_gap_avg = sum(dynamic_gap_widths) / (1 + len(dynamic_gap_widths))
 
-    return score / width
+    score = static_gap_avg * 0.4 \
+        + dynamic_gap_avg * 0.571 \
+        + (enemy_count - hurts - fall_kills) * 0.04 \
+        + fall_kills * 0.333 \
+        + hurts * 1.5 \
+        + tube_count * 0.0666 \
+        + cannon_count * 0.1667 \
+        - (powerup_count - collected_powerups) * 0.2 \
+        - collected_powerups * 1.5
+
+    return score
 
 
 def count_enemies(column: np.ndarray) -> int:
