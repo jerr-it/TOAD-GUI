@@ -7,10 +7,15 @@ from patching.metrics.metric import Metric
 
 class Runtime(Metric):
     def __init__(self):
-        super().__init__()
         self.start = None
 
-    def pre_hook(self):
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
         self.start = time.time()
 
     def iter_hook(
@@ -26,5 +31,7 @@ class Runtime(Metric):
             original_level: list[str],
             generated_level: list[str],
             fixed_level: list[str],
-    ) -> float:
-        return time.time() - self.start
+    ) -> dict[str, object]:
+        return {
+            "Runtime": time.time() - self.start
+        }

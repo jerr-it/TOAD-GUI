@@ -4,20 +4,21 @@ import py4j.java_gateway
 from patching.metrics.metric import Metric
 from utils.token_defs import *
 
-"""
-Leniency is a metric for estimating the difficulty of a level.
-Its definitions are all somewhat different:
-Horn et al, Shaker et al, Smith et al
-Generally it assigns a score to a levels components, for example:
--1 for enemies
-+1 for powerups
-...
-"""
 
+class Difficulty(Metric):
+    def __init__(self):
+        self.original_difficulty: float = 0.0
+        self.generated_difficulty: float = 0.0
 
-class DifficultyOriginal(Metric):
-    def pre_hook(self):
-        pass
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
+        self.original_difficulty = difficulty(original_level, original_mario_result)
+        self.generated_difficulty = difficulty(generated_level, generated_mario_result)
 
     def iter_hook(
         self,
@@ -33,49 +34,11 @@ class DifficultyOriginal(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ):
-        return difficulty(original_level, mario_result)
-
-
-class DifficultyGenerated(Metric):
-    def pre_hook(self):
-        pass
-
-    def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
-    ):
-        pass
-
-    def post_hook(
-            self,
-            mario_result: py4j.java_gateway.JavaObject,
-            original_level: list[str],
-            generated_level: list[str],
-            fixed_level: list[str],
-    ):
-        return difficulty(generated_level, mario_result)
-
-
-class DifficultyFixed(Metric):
-    def pre_hook(self):
-        pass
-
-    def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
-    ):
-        pass
-
-    def post_hook(
-            self,
-            mario_result: py4j.java_gateway.JavaObject,
-            original_level: list[str],
-            generated_level: list[str],
-            fixed_level: list[str],
-    ):
-        return difficulty(fixed_level, mario_result)
+        return {
+            "Difficulty original": self.original_difficulty,
+            "Difficulty generated": self.generated_difficulty,
+            "Difficulty fixed": difficulty(fixed_level, mario_result)
+        }
 
 
 def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> float:

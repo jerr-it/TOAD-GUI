@@ -114,7 +114,7 @@ def pipeline_generate():
     generator_attempts = {}
     for generator_path in list_generators():
         total_attempts = 0
-        with concurrent.futures.ProcessPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
             futures = [
                 executor.submit(
                     generate_unplayable_level,

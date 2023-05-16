@@ -4,8 +4,19 @@ from patching.metrics.metric import Metric
 
 
 class JumpLength(Metric):
-    def pre_hook(self):
-        pass
+    def __init__(self):
+        self.generated_max_jump = None
+        self.original_max_jump = None
+
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
+        self.original_max_jump = original_mario_result.getMaxXJump() / 16
+        self.generated_max_jump = generated_mario_result.getMaxXJump() / 16
 
     def iter_hook(
             self,
@@ -20,5 +31,9 @@ class JumpLength(Metric):
             original_level: list[str],
             generated_level: list[str],
             fixed_level: list[str],
-    ) -> object:
-        return mario_result.getMaxXJump()
+    ) -> dict[str, object]:
+        return {
+            "Original max jump": self.original_max_jump,
+            "Generated max jump": self.generated_max_jump,
+            "Fixed max jump": mario_result.getMaxXJump() / 16
+        }

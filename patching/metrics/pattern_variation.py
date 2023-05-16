@@ -4,8 +4,14 @@ import py4j.java_gateway
 from patching.metrics.metric import Metric
 
 
-class PatternVariationOriginal(Metric):
-    def pre_hook(self):
+class PatternVariation(Metric):
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
         pass
 
     def iter_hook(
@@ -21,50 +27,12 @@ class PatternVariationOriginal(Metric):
             original_level: list[str],
             generated_level: list[str],
             fixed_level: list[str],
-    ) -> float:
-        return pattern_variation(original_level)
-
-
-class PatternVariationGenerated(Metric):
-    def pre_hook(self):
-        pass
-
-    def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
-    ):
-        pass
-
-    def post_hook(
-            self,
-            mario_result: py4j.java_gateway.JavaObject,
-            original_level: list[str],
-            generated_level: list[str],
-            fixed_level: list[str],
-    ) -> float:
-        return pattern_variation(generated_level)
-
-
-class PatternVariationFixed(Metric):
-    def pre_hook(self):
-        pass
-
-    def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
-    ):
-        pass
-
-    def post_hook(
-            self,
-            mario_result: py4j.java_gateway.JavaObject,
-            original_level: list[str],
-            generated_level: list[str],
-            fixed_level: list[str],
-    ) -> float:
-        return pattern_variation(fixed_level)
+    ) -> dict[str, object]:
+        return {
+            "Pattern variation original": pattern_variation(original_level),
+            "Pattern variation generated": pattern_variation(generated_level),
+            "Pattern variation fixed": pattern_variation(fixed_level),
+        }
 
 
 def pattern_variation(level: list[str], kernel_size: int = 3) -> float:

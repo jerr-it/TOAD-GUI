@@ -4,8 +4,19 @@ from patching.metrics.metric import Metric
 
 
 class Lives(Metric):
-    def pre_hook(self):
-        pass
+    def __init__(self):
+        self.generated_lives = None
+        self.original_lives = None
+
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
+        self.original_lives = original_mario_result.getCurrentLives()
+        self.generated_lives = generated_mario_result.getCurrentLives()
 
     def iter_hook(
             self,
@@ -20,5 +31,9 @@ class Lives(Metric):
             original_level: list[str],
             generated_level: list[str],
             fixed_level: list[str],
-    ) -> object:
-        return mario_result.getCurrentLives()
+    ) -> dict[str, object]:
+        return {
+            "Original lives": self.original_lives,
+            "Generated lives": self.generated_lives,
+            "Fixed lives": mario_result.getCurrentLives(),
+        }

@@ -76,6 +76,9 @@ def already_done(level_path: str, patcher: str, metrics_df: pd.DataFrame) -> boo
     :param metrics_df: df containing already completed runs
     :return: True if the patcher was already run on that level
     """
+    if metrics_df.empty:
+        return False
+
     return ((metrics_df["level"] == level_path) & (metrics_df["patcher"] == patcher)).any()
 
 
@@ -149,49 +152,62 @@ def repair_level(
     level_height: int = len(generated_level)
 
     original_level = load_original_level(generator_path)
+    try:
+        with MarioAI() as mario:
+            metrics_data = []
+            level_dict = {}
 
-    with MarioAI() as mario:
-        metrics_data = []
-        level_dict = {}
+            for patcher_name, patcher in patchers.items():
+                if already_done(level_path, patcher_name, metrics_df):
+                    print(f"Skipping {patcher_name} for {level_path}")
+                    continue
 
-        for patcher_name, patcher in patchers.items():
-            if already_done(level_path, patcher_name, metrics_df):
-                print(f"Skipping {patcher_name} for {level_path}")
-                continue
+                print(f"Applying {patcher_name} to {level_path}")
+                metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
 
-            print(f"Applying {patcher_name} to {level_path}")
-            metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
-
-            for metric in metrics:
-                metric["object"].pre_hook()
-
-            fixed_level: list[str] = generated_level.copy()
-            current_progress = progress
-            while current_progress < 0.99:
-                broken_range = calculate_broken_range(current_progress, level_width, level_height)
-
-                try:
-                    fixed_level = check_mario_token(
-                        patcher.patch(original_level.copy(), fixed_level, broken_range)
-                    )
-
-                    mario_result = mario.evaluate_level(fixed_level)
-                    current_progress = mario_result.getCompletionPercentage()
-                except Exception as e:
-                    print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=sys.stderr)
+                original_result = mario.evaluate_level(original_level.copy())
+                generated_result = mario.evaluate_level(generated_level.copy())
 
                 for metric in metrics:
-                    metric["object"].iter_hook(mario_result, fixed_level.copy())
+                    metric.pre_hook(
+                        original_level.copy(),
+                        original_result,
+                        generated_level.copy(),
+                        generated_result
+                    )
 
-            level_dict[patcher_name] = fixed_level.copy()
-            for metric in reversed(metrics):
-                result = metric["object"].post_hook(
-                    mario_result,
-                    original_level.copy(),
-                    generated_level.copy(),
-                    fixed_level.copy()
-                )
-                metrics_data[0][metric["name"]] = result
+                fixed_level: list[str] = generated_level.copy()
+                current_progress = progress
+                while current_progress < 0.99:
+                    broken_range = calculate_broken_range(current_progress, level_width, level_height)
+
+                    try:
+                        fixed_level = check_mario_token(
+                            patcher.patch(original_level, fixed_level, broken_range)
+                        )
+
+                        mario_result = mario.evaluate_level(fixed_level)
+                        current_progress = mario_result.getCompletionPercentage()
+                    except Exception as e:
+                        print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=sys.stderr)
+
+                    for metric in metrics:
+                        metric.iter_hook(mario_result, fixed_level)
+
+                level_dict[patcher_name] = fixed_level
+                for metric in reversed(metrics):
+                    result = metric.post_hook(
+                        mario_result,
+                        original_level,
+                        generated_level,
+                        fixed_level
+                    )
+
+                    for metric_name, metric_value in result.items():
+                        metrics_data[0][metric_name] = metric_value
+    except Exception as e:
+        print(f"Important exception happened: {e}", file=sys.stderr)
+        exit(1)
 
     return level_path, pd.DataFrame(metrics_data), level_dict
 
@@ -203,10 +219,7 @@ def read_or_create_metrics_csv() -> pd.DataFrame:
     if os.path.exists(metrics_path):
         metrics_df = pd.read_csv(metrics_path)
     else:
-        headers = ["level", "patcher"]
-        for metric in metrics:
-            headers.append(metric["name"])
-        metrics_df = pd.DataFrame(columns=headers)
+        metrics_df = pd.DataFrame()
 
     return metrics_df
 

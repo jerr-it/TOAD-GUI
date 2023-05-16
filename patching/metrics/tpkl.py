@@ -6,8 +6,14 @@ from patching.metrics.metric import Metric
 EPSILON = 1e-8
 
 
-class TPKLOriginalGenerated(Metric):
-    def pre_hook(self):
+class TPKL(Metric):
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
         pass
 
     def iter_hook(
@@ -23,29 +29,11 @@ class TPKLOriginalGenerated(Metric):
             original_level: list[str],
             generated_level: list[str],
             fixed_level: list[str],
-    ) -> float:
-        return tpkl(original_level, generated_level)
-
-
-class TPKLOriginalFixed(Metric):
-    def pre_hook(self):
-        pass
-
-    def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
-    ):
-        pass
-
-    def post_hook(
-            self,
-            mario_result: py4j.java_gateway.JavaObject,
-            original_level: list[str],
-            generated_level: list[str],
-            fixed_level: list[str],
-    ) -> object:
-        return tpkl(original_level, fixed_level)
+    ) -> dict[str, object]:
+        return {
+            "TPKL Original-Generated": tpkl(original_level, generated_level),
+            "TPKL Original-Fixed": tpkl(original_level, fixed_level)
+        }
 
 
 def tpkl(level_a: list[str] | np.ndarray, level_b: list[str] | np.ndarray, kernel_size: int = 3) -> float:

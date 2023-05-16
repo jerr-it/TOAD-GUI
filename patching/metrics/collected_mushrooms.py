@@ -4,8 +4,19 @@ from patching.metrics.metric import Metric
 
 
 class CollectedMushrooms(Metric):
-    def pre_hook(self):
-        pass
+    def __init__(self):
+        self.generated_cm: int = 0
+        self.original_cm: int = 0
+
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
+        self.original_cm = original_mario_result.getNumCollectedMushrooms()
+        self.generated_cm = generated_mario_result.getNumCollectedMushrooms()
 
     def iter_hook(
         self,
@@ -20,5 +31,9 @@ class CollectedMushrooms(Metric):
         original_level: list[str],
         generated_level: list[str],
         fixed_level: list[str],
-    ) -> object:
-        return mario_result.getNumCollectedMushrooms()
+    ) -> dict[str, object]:
+        return {
+            "Collected mushrooms original": self.original_cm,
+            "Collected mushrooms generated": self.generated_cm,
+            "Collected mushrooms fixed": mario_result.getNumCollectedMushrooms()
+        }
