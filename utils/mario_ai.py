@@ -1,7 +1,10 @@
+import os
+
 import py4j.java_gateway
 from py4j.java_gateway import JavaGateway
 
-from GUI import MARIO_AI_PATH
+# old: MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario-1.0-SNAPSHOT.jar"))
+MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario_ai_revisited.jar"))
 
 
 class MarioAI:

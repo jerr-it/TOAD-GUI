@@ -13,15 +13,13 @@ import math
 import sys
 
 import patching
+from utils.mario_ai import MarioAI, MARIO_AI_PATH
 from utils.scrollable_image import ScrollableImage
 from utils.tooltip import Tooltip
 from utils.level_utils import read_level_from_file, one_hot_to_ascii_level, place_a_mario_token, ascii_to_one_hot_level
 from utils.level_image_gen import LevelImageGen
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 
-# Path to the AI Framework jar for Playing levels
-# MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario-1.0-SNAPSHOT.jar"))
-MARIO_AI_PATH = os.path.abspath(os.path.join(os.path.curdir, "Mario-AI-Framework/mario_ai_revisited.jar"))
 
 # Check if windows user
 if platform.system() == "Windows":
@@ -134,6 +132,8 @@ def TOAD_GUI():
     use_gen.set(False)
     is_loaded.set(False)
 
+    generator_name: str = ""
+
     # ---------------------------------------- Define Callbacks ----------------------------------------
     @threaded
     def load_level():
@@ -195,6 +195,9 @@ def TOAD_GUI():
             is_loaded.set(False)
             load_string_gen.set('Path: ' + fname)
             folder = fname
+
+            nonlocal generator_name
+            generator_name = fname
 
             # Load TOAD-GAN
             loadgan, msg = load_trained_pyramid(folder)
@@ -339,28 +342,83 @@ def TOAD_GUI():
         use_gen.set(remember_use_gen)  # only set use_gen to True if it was previously
         return
 
-    def evaluate_level(level) -> float:
+    def load_original_level(generator_path: str) -> list[str]:
         """
-            Py4j Java bridge uses Mario AI Framework to check if the level is playable
-            and at what point the player cant progress anymore
-            :param level: list of strings, each string is a line of the level
-            :return: float, the completion percentage of the level
+        Loads the original level the given generator was trained on
+        :param generator_path: Path to the generator
+        :return: Original level the generator was trained on
         """
-        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=True, redirect_stdout=sys.stdout,
-                                             redirect_stderr=sys.stderr)
+        level_id: str = generator_path.split("_")[-1]
+        level_path: str = os.path.join(os.path.curdir, "levels", "originals", f"lvl_{level_id}.txt")
 
-        game = gateway.jvm.mff.agents.common.AgentMarioGame()
-        agent = gateway.jvm.mff.agents.astarPlanningDynamic.Agent()
+        level: list[str]
+        with open(level_path, "r") as f:
+            level = [line.rstrip() for line in f.readlines()]
 
-        # TODO find solution for agent getting stuck in a loop because of high walls. Waiting 10 seconds per
-        #  unplayable level is not a good solution
-        result = game.runGame(agent, level, 20, 0, False)
-        progress = result.getCompletionPercentage()
+        return level
 
-        gateway.java_process.kill()
-        gateway.close()
+    def calculate_broken_range(
+            progress: float,
+            level_width: int,
+            level_height: int,
+            range_width: int = 5
+    ) -> tuple[tuple[int, int], tuple[int, int]]:
+        """
+        Calculates a range thats to be replaced by the patcher
+        :param progress: Progress the mario agent made in %
+        :param level_width: Total width of the level (blocks)
+        :param level_height: Total height of the level (blocks)
+        :param range_width: How wide the range is supposed to be in each direction
+        :return: Range
+        """
+        block_progress = int(float(level_width) * progress)
 
-        return progress
+        return (
+            (max(block_progress - range_width, 0), min(block_progress + range_width, level_width - 2)),
+            (0, level_height)
+        )
+
+    @threaded
+    def fix_current_level():
+        error_msg.set(f"Trying to fix level using {dropdown_value.get()} ...")
+        patcher_apply_button.state(['disabled'])
+        patcher_dropdown.state(['disabled'])
+
+        nonlocal generator_name
+        orig_level = load_original_level(generator_name)
+
+        level = []
+        for line in level_obj.ascii_level:
+            level.append(line.rstrip())
+
+        level_width = len(level[0])
+        level_height = len(level)
+
+        with MarioAI() as mario:
+            progress = mario.evaluate_level(level).getCompletionPercentage()
+
+            tries = 0
+            while progress < 0.99:
+                try:
+                    pass
+                    level = patching.patchers[dropdown_value.get()].patch(
+                        orig_level,
+                        level,
+                        calculate_broken_range(progress, level_width, level_height)
+                    )
+
+                    progress = mario.evaluate_level(level).getCompletionPercentage()
+                    tries += 1
+                except Exception as e:
+                    print(f"Patcher caused exception: {e}", file=sys.stderr)
+
+            patcher_apply_button.state(['!disabled'])
+            patcher_dropdown.state(['!disabled'])
+
+            level_obj.ascii_level = [line + "\n" for line in level]
+            level_obj.ascii_level[-1] = level_obj.ascii_level[-1].rstrip()
+            redraw_image()
+            error_msg.set(f"Fixed level using {dropdown_value.get()} in {tries} attempts" if tries > 0 else "Level is playable")
 
     # ---------------------------------------- Layout ----------------------------------------
 
@@ -421,10 +479,34 @@ def TOAD_GUI():
 
     use_gen.trace("w", callback=set_button_state)
 
+    dropdown_value = StringVar()
+
+    tab_control = ttk.Notebook(settings)
+
+    repair_tab = ttk.Frame(tab_control)
+
     # Play and Controls frame
-    p_c_frame = ttk.Frame(settings)
+    p_c_frame = ttk.Frame(tab_control)
     play_button = ttk.Button(p_c_frame, compound='top', image=play_level_icon, text='Play level',
                              state='disabled', command=play_level)
+
+    tab_control.add(p_c_frame, text="Play / Edit")
+    tab_control.add(repair_tab, text="Repair")
+
+    patcher_explain_label = ttk.Label(repair_tab, text="Algorithm used to fix the broken level section")
+    keys: list[str] = list(patching.patchers.keys())
+    dropdown_value.set(keys[0])
+    patcher_dropdown = ttk.OptionMenu(repair_tab, dropdown_value, keys[0], *keys)
+    patcher_dropdown.config(width=20)
+
+    patcher_apply_button = ttk.Button(repair_tab, text="Apply", command=fix_current_level)
+
+    patcher_explain_label.grid(column=0, row=0, sticky=(N, W), padx=25, pady=(25, 0))
+    patcher_dropdown.grid(column=0, row=1, sticky=(N, W), padx=50, pady=20)
+    patcher_apply_button.grid(column=1, row=0, columnspan=10, rowspan=4, sticky=(N, W, S, E), padx=(300, 0), pady=10)
+    patcher_apply_button.columnconfigure(1, weight=1)
+
+    tab_control.grid(column=0, row=7, sticky=(N, S, E, W), columnspan=3, padx=5, pady=5)
 
     # Level Preview image
     image_label = ScrollableImage(settings, image=levelimage, height=271)
@@ -501,7 +583,6 @@ def TOAD_GUI():
     gen_button.grid(column=1, row=4, sticky=(N, S, E, W), padx=5, pady=5)
     save_button.grid(column=2, row=4, sticky=(N, S, E, W), padx=5, pady=5)
     image_label.grid(column=0, row=6, columnspan=4, sticky=(N, E, W), padx=5, pady=8)
-    p_c_frame.grid(column=1, row=7, columnspan=2, sticky=(N, S, E, W), padx=5, pady=5)
     fpath_label.grid(column=0, row=99, columnspan=4, sticky=(S, E, W), padx=5, pady=5)
     error_label.grid(column=0, row=100, columnspan=4, sticky=(S, E, W), padx=5, pady=1)
     size_frame.grid(column=1, row=5, columnspan=1, sticky=(N, S), padx=5, pady=2)
@@ -566,7 +647,6 @@ def TOAD_GUI():
     bbox_y2 = IntVar()
     edit_scale = IntVar()
     scale_info = StringVar()
-    dropdown_value = StringVar()
 
     # Set values
     editmode.set(False)
@@ -594,20 +674,6 @@ def TOAD_GUI():
 
     # Edit mode frame
     emode_frame = ttk.LabelFrame(p_c_frame, text="Edit mode controls", padding=(5, 5, 5, 5))
-
-    # Correction frame
-    repair_frame = ttk.LabelFrame(emode_frame, text="Repair", padding=(5, 5, 5, 5))
-    detect_hint_label = ttk.Label(repair_frame, text="Click to detect unplayable parts")
-    detect_button = ttk.Button(repair_frame, text="Detect", command=lambda: print(evaluate_level(''.join(level_obj.ascii_level))))
-
-    patcher_explain_label = ttk.Label(repair_frame, text="Method to apply to unplayable part")
-    keys: list[str] = list(patching.patchers.keys())
-    dropdown_value.set(keys[0])
-    patcher_dropdown = ttk.OptionMenu(repair_frame, dropdown_value, keys[0], *keys)
-    patcher_dropdown.config(width=20)
-
-    patcher_apply_button = ttk.Button(repair_frame, text="Apply")
-
     # Bounding Box frame
     bbox_frame = ttk.LabelFrame(emode_frame, text="Bounding Box", padding=(5, 5, 5, 5))
 
@@ -717,14 +783,6 @@ def TOAD_GUI():
             sc_entry.grid(column=1, row=0, columnspan=1, sticky=(N, S, W), padx=1, pady=5)
             sc_info_label.grid(column=0, row=1, columnspan=2, sticky=(N, S, W), padx=1, pady=5)
             sc_noise_image.grid(column=0, row=2, columnspan=2, sticky=(N, W), padx=1, pady=5)
-
-            # On corrections_frame:
-            repair_frame.grid(column=3, row=0, columnspan=5, sticky=(N, S, E), padx=(50, 10), pady=5)
-            detect_hint_label.grid(column=0, row=0, columnspan=1, sticky=(N, W), padx=1, pady=5)
-            detect_button.grid(column=0, row=1, columnspan=1, sticky=(N, W), padx=1, pady=5)
-            patcher_explain_label.grid(column=0, row=2, sticky=(N, W), padx=1, pady=5)
-            patcher_dropdown.grid(column=0, row=3, sticky=(N, W), padx=1, pady=5)
-            patcher_apply_button.grid(column=1, row=3, sticky=(N, W), padx=1, pady=5)
 
             # On bbox_frame:
             x1_label.grid(column=0, row=0, sticky=(N, S, E), padx=1, pady=1)
