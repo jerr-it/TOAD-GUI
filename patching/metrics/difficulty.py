@@ -132,15 +132,15 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
     static_gap_avg = sum(static_gap_widths) / (1 + len(static_gap_widths))
     dynamic_gap_avg = sum(dynamic_gap_widths) / (1 + len(dynamic_gap_widths))
 
-    score = static_gap_avg * 0.4 \
-        + dynamic_gap_avg * 0.571 \
-        + (enemy_count - hurts - fall_kills) * 0.04 \
+    score = static_gap_avg * 1.2 \
+        + dynamic_gap_avg * 1.428 \
+        + (enemy_count - hurts - fall_kills) * 0.02 \
         + fall_kills * 0.333 \
         + hurts * 1.5 \
-        + tube_count * 0.0666 \
-        + cannon_count * 0.1667 \
+        + tube_count * 0.1 \
+        + cannon_count * 0.333 \
         - (powerup_count - collected_powerups) * 0.2 \
-        - collected_powerups * 1.5
+        - collected_powerups * 2.0
 
     return score
 
