@@ -3,7 +3,7 @@ import numpy as np
 from patching.patcher import Patcher
 
 
-class StichingPatcher(Patcher):
+class Stitching(Patcher):
     """
     This patcher fixes the broken range by 'stitching' the broken range from the original into the generated level.
     """
