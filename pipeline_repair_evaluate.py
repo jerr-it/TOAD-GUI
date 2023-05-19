@@ -10,7 +10,7 @@ from patching.metrics import metrics
 from utils.level_utils import place_a_mario_token
 from utils.mario_ai import MarioAI
 
-REPAIR_STAGE_THREADS = 8
+REPAIR_STAGE_THREADS = 1
 
 
 def list_generators() -> list[str]:
@@ -183,7 +183,7 @@ def repair_level(
 
                     try:
                         fixed_level = check_mario_token(
-                            patcher.patch(original_level, fixed_level, broken_range)
+                            patcher.patch(original_level, fixed_level, broken_range, generator_path)
                         )
 
                         mario_result = mario.evaluate_level(fixed_level)

@@ -11,7 +11,8 @@ class Stitching(Patcher):
             self,
             original_level: list[str],
             level: list[str],  # Level formatted as a list of strings row-wise
-            broken_range: tuple[tuple[int, int], tuple[int, int]]  # (x_range, y_range)
+            broken_range: tuple[tuple[int, int], tuple[int, int]],  # (x_range, y_range)
+            generator_path: str,
     ) -> list[str]:
         # Convert levels to 2d numpy arrays, splitting strings into chars
         original_level = np.array([list(row) for row in original_level])

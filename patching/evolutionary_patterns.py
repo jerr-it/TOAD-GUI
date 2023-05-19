@@ -14,7 +14,8 @@ class EvolutionaryPatterns(Patcher):
             self,
             original_level: list[str],
             level: list[str],  # Level formatted as a list of strings row-wise
-            broken_range: tuple[tuple[int, int], tuple[int, int]]  # (x_range, y_range)
+            broken_range: tuple[tuple[int, int], tuple[int, int]],  # (x_range, y_range)
+            generator_path: str
     ) -> list[str]:
         x_range, y_range = broken_range
         population = Population(level, x_range[1] - x_range[0], original_level, broken_range)
