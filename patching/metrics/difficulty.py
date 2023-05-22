@@ -71,6 +71,9 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
         x_pos = position.getX()
         y_pos = position.getY()
 
+        if y_pos >= height:
+            continue
+
         if x_pos <= covered_x_position:
             continue
 
@@ -81,7 +84,6 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
                 break
 
         covered_x_position += 1
-
         level[y_pos][x_pos] = MARIO_PATH_TOKEN
 
         if is_gap:

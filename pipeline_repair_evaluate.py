@@ -3,14 +3,17 @@ import os
 import sys
 import time
 
+import numpy as np
 import pandas as pd
+import py4j.java_gateway
 
 from patching import patchers
 from patching.metrics import metrics
 from utils.level_utils import place_a_mario_token
 from utils.mario_ai import MarioAI
+from utils.token_defs import MARIO_PATH_TOKEN
 
-REPAIR_STAGE_THREADS = 1
+REPAIR_STAGE_THREADS = 8
 
 
 def list_generators() -> list[str]:
@@ -131,6 +134,23 @@ def check_mario_token(level: list[str]) -> list[str]:
     return level
 
 
+def mark_path(level: list[str], result: py4j.java_gateway.JavaObject) -> list[str]:
+    nplevel = np.array([list(row) for row in level])
+    height = len(level)
+
+    path = result.getMarioPath()
+    for position in path:
+        x = position.getX()
+        y = position.getY()
+
+        if y >= height:
+            continue
+
+        nplevel[y][x] = MARIO_PATH_TOKEN
+
+    return ["".join(row) for row in nplevel]
+
+
 def repair_level(
         level_path: str,
         generator_path: str,
@@ -147,12 +167,12 @@ def repair_level(
         dict of levels fixed (one per patcher)
     )
     """
-    generated_level, progress = parse_broken_level(level_path)
-    level_width: int = len(generated_level[0])
-    level_height: int = len(generated_level)
-
-    original_level = load_original_level(generator_path)
     try:
+        generated_level, progress = parse_broken_level(level_path)
+        level_width: int = len(generated_level[0])
+        level_height: int = len(generated_level)
+
+        original_level = load_original_level(generator_path)
         with MarioAI() as mario:
             metrics_data = []
             level_dict = {}
@@ -178,6 +198,7 @@ def repair_level(
 
                 fixed_level: list[str] = generated_level.copy()
                 current_progress = progress
+
                 while current_progress < 0.99:
                     broken_range = calculate_broken_range(current_progress, level_width, level_height)
 
@@ -194,7 +215,9 @@ def repair_level(
                     for metric in metrics:
                         metric.iter_hook(mario_result, fixed_level)
 
+                fixed_level = mark_path(fixed_level, mario_result)
                 level_dict[patcher_name] = fixed_level
+
                 for metric in reversed(metrics):
                     result = metric.post_hook(
                         mario_result,
@@ -206,8 +229,7 @@ def repair_level(
                     for metric_name, metric_value in result.items():
                         metrics_data[0][metric_name] = metric_value
     except Exception as e:
-        print(f"Important exception happened: {e}", file=sys.stderr)
-        exit(1)
+        print(f"Fixing process ended unexpectedly: {e}", file=sys.stderr)
 
     return level_path, pd.DataFrame(metrics_data), level_dict
 
