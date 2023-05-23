@@ -92,6 +92,7 @@ def TOAD_GUI():
     play_level_icon = ImageTk.PhotoImage(Image.open('icons/play_button.png'))
     save_level_icon = ImageTk.PhotoImage(Image.open('icons/save_button.png'))
     blue_play_level_icon = ImageTk.PhotoImage(Image.open("icons/play_button_blue.png"))
+    apply_icon = ImageTk.PhotoImage(Image.open("icons/apply.png"))
 
     root.iconphoto(False, toad_icon)
 
@@ -511,16 +512,19 @@ def TOAD_GUI():
     patcher_dropdown = ttk.OptionMenu(repair_tab, dropdown_value, keys[0], *keys)
     patcher_dropdown.config(width=20)
 
+    repair_tab.columnconfigure(1, weight=1)
+
     patcher_human_play_button = ttk.Button(repair_tab, text="Play", compound="top", image=play_level_icon, command=lambda: play_level(AgentType.Human, True, 30, 200))
     patcher_agent_play_button = ttk.Button(repair_tab, text="AI Agent", compound="top", image=blue_play_level_icon, command=lambda: play_level(AgentType.AstarDynamicPlanning, True, 30, 200))
-    patcher_apply_button = ttk.Button(repair_tab, text="Apply", command=fix_current_level)
+    patcher_apply_button = ttk.Button(repair_tab, text="Apply", compound="top", image=apply_icon, command=fix_current_level)
 
-    patcher_explain_label.grid(column=0, row=0, sticky=(N, W), padx=(20, 0), pady=(25, 0))
+    patcher_explain_label.grid(column=0, row=0, sticky=(N, W), padx=(20, 0), pady=(25, 20))
     patcher_dropdown.grid(column=0, row=1, sticky=(N, W), padx=(20, 10), pady=20)
 
-    patcher_apply_button.grid(column=1, row=1, pady=(20, 0), sticky=(N, W))
-    patcher_human_play_button.grid(column=2, row=0, rowspan=2, padx=(225, 0), pady=(15, 0), sticky=(N, W, S, E))
-    patcher_agent_play_button.grid(column=3, row=0, rowspan=2, padx=(15, 0), pady=(15, 0), sticky=(N, W, S, E))
+    patcher_apply_button.grid(column=1, row=0, rowspan=2, padx=15, pady=15, sticky=(N, S, W, E))
+    ttk.Separator(repair_tab, orient=VERTICAL).grid(column=2, row=0, rowspan=2, padx=5, pady=5, sticky=(N, S, E))
+    patcher_human_play_button.grid(column=3, row=0, rowspan=2, padx=10, pady=15, sticky=(N, W, S, E))
+    patcher_agent_play_button.grid(column=4, row=0, rowspan=2, padx=10, pady=15, sticky=(N, W, S, E))
 
     tab_control.grid(column=0, row=7, sticky=(N, S, E, W), columnspan=3, padx=5, pady=5)
 
