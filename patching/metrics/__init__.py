@@ -1,6 +1,6 @@
 from patching.metrics.coins import Coins
 from patching.metrics.collected_mushrooms import CollectedMushrooms
-from patching.metrics.difficulty import Difficulty
+from patching.metrics.difficulty import Difficulty, RollingDifficulty
 from patching.metrics.hits import Hits
 from patching.metrics.jump_air_time import JumpAirTime
 from patching.metrics.jump_length import JumpLength
@@ -28,6 +28,7 @@ metrics: list[Metric] = [
     PatternVariation(),
     Tries(),
     Difficulty(),
+    RollingDifficulty(),
     TPKL(),
     Memory(),
     Runtime(),

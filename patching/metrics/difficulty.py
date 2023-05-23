@@ -41,11 +41,59 @@ class Difficulty(Metric):
         }
 
 
-def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> float:
+class RollingDifficulty(Metric):
+    def __init__(self):
+        self.generated_rolling_difficulty = None
+        self.original_rolling_difficulty = None
+
+    def pre_hook(
+        self,
+        original_level: list[str],
+        original_mario_result: py4j.java_gateway.JavaObject,
+        generated_level: list[str],
+        generated_mario_result: py4j.java_gateway.JavaObject,
+    ):
+        self.original_rolling_difficulty = "|".join([str(f) for f in rolling_difficulty(original_level, original_mario_result)])
+        self.generated_rolling_difficulty = "|".join([str(f) for f in rolling_difficulty(generated_level, generated_mario_result)])
+
+    def iter_hook(
+        self,
+        mario_result: py4j.java_gateway.JavaObject,
+        fixed_level: list[str],
+    ):
+        pass
+
+    def post_hook(
+        self,
+        mario_result: py4j.java_gateway.JavaObject,
+        original_level: list[str],
+        generated_level: list[str],
+        fixed_level: list[str],
+    ) -> dict[str, object]:
+        return {
+            "Original rolling difficulty": self.original_rolling_difficulty,
+            "Generated rolling difficulty": self.generated_rolling_difficulty,
+            "Fixed rolling difficulty": "|".join([str(f) for f in rolling_difficulty(fixed_level, mario_result)])
+        }
+
+
+def rolling_difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, window_size: int = 10) -> list[float]:
+    width = len(level[0])
+
+    difficulties: list[float] = []
+    for window_start in range(0, width - window_size):
+        window_difficulty = difficulty(level, mario_result, (window_start, window_start + window_size))
+        difficulties.append(window_difficulty)
+
+    return difficulties
+
+
+def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, window: tuple[int, int] | None = None) -> float:
     """
     Consists of a static and a dynamic evaluation.
     Static evaluation is based on data gathered by analysing the level itself.
     Dynamic evaluation is based on data gathered by the Mario AI Framework agent playing the level
+    :param window: Window to calculate difficulty for (moving average)
     :param level: Level to analyse
     :param mario_result: Data gathered by the AI agent, type is MarioResult (see Mario AI Framework)
     :return: Difficulty score, higher meaning more difficult
@@ -56,6 +104,9 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
     # Determine the height for every vertical column
     width: int = level.shape[1]
     height: int = level.shape[0]
+
+    if window is None:
+        window = (0, width)
 
     enemy_count: int = 0
     cannon_count: int = 0
@@ -70,6 +121,9 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
     for position in path:
         x_pos = position.getX()
         y_pos = position.getY()
+
+        if x_pos < window[0] or x_pos > window[1]:
+            continue
 
         if y_pos >= height:
             continue
@@ -101,7 +155,7 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject) -> 
         else:
             difficult_jumps += 1
 
-    for column in range(width - 1):
+    for column in range(window[0], min(window[1], width-1)):
         enemy_count += count_enemies(level[:, column])
         cannon_count += count_cannon(level[:, column])
         tube_count += count_tubes((level[:, column], level[:, column + 1]))
