@@ -10,7 +10,7 @@ import py4j.java_gateway
 from patching import patchers
 from patching.metrics import metrics
 from utils.level_utils import place_a_mario_token
-from utils.mario_ai import MarioAI
+from utils.mario_ai import MarioAI, AgentType
 from utils.token_defs import MARIO_PATH_TOKEN
 
 REPAIR_STAGE_THREADS = 8
@@ -185,8 +185,8 @@ def repair_level(
                 print(f"Applying {patcher_name} to {level_path}")
                 metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
 
-                original_result = mario.evaluate_level(original_level.copy())
-                generated_result = mario.evaluate_level(generated_level.copy())
+                original_result = mario.evaluate_level(original_level.copy(), AgentType.AstarDynamicPlanning, False, 4000, 30)
+                generated_result = mario.evaluate_level(generated_level.copy(), AgentType.AstarDynamicPlanning, False, 4000, 30)
 
                 for metric in metrics:
                     metric.pre_hook(
@@ -207,7 +207,7 @@ def repair_level(
                             patcher.patch(original_level, fixed_level, broken_range, generator_path)
                         )
 
-                        mario_result = mario.evaluate_level(fixed_level)
+                        mario_result = mario.evaluate_level(fixed_level, AgentType.AstarDynamicPlanning, False, 4000, 30)
                         current_progress = mario_result.getCompletionPercentage()
                     except Exception as e:
                         print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=sys.stderr)

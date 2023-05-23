@@ -13,7 +13,7 @@ import math
 import sys
 
 import patching
-from utils.mario_ai import MarioAI, MARIO_AI_PATH
+from utils.mario_ai import MarioAI, MARIO_AI_PATH, AgentType
 from utils.scrollable_image import ScrollableImage
 from utils.tooltip import Tooltip
 from utils.level_utils import read_level_from_file, one_hot_to_ascii_level, place_a_mario_token, ascii_to_one_hot_level
@@ -91,6 +91,7 @@ def TOAD_GUI():
     generate_level_icon = ImageTk.PhotoImage(Image.open('icons/gear_toad.png'))
     play_level_icon = ImageTk.PhotoImage(Image.open('icons/play_button.png'))
     save_level_icon = ImageTk.PhotoImage(Image.open('icons/save_button.png'))
+    blue_play_level_icon = ImageTk.PhotoImage(Image.open("icons/play_button_blue.png"))
 
     root.iconphoto(False, toad_icon)
 
@@ -320,30 +321,21 @@ def TOAD_GUI():
             image_label.change_image(level_obj.image)
 
     @threaded
-    def play_level():
+    def play_level(agent: AgentType, visuals: bool, speed: int, timeout: int):
         error_msg.set("Playing level...")
         is_loaded.set(False)
         remember_use_gen = use_gen.get()
         use_gen.set(False)
-        # Py4j Java bridge uses Mario AI Framework
-        gateway = JavaGateway.launch_gateway(classpath=MARIO_AI_PATH, die_on_exit=False, redirect_stdout=sys.stdout,
-                                             redirect_stderr=sys.stderr)
 
-        game = gateway.jvm.engine.core.MarioGame()
         try:
-            agent = gateway.jvm.agents.human.Agent()
-            while True:
-                result = game.runGame(agent, ''.join(level_obj.ascii_level), 200, 0, True, 30, 2.0)
+            with MarioAI() as mario:
+                result = mario.evaluate_level([line.rstrip() for line in level_obj.ascii_level], agent, visuals, speed, timeout)
                 perc = int(result.getCompletionPercentage() * 100)
                 error_msg.set("Level Played. Completion Percentage: %d%%" % perc)
         except Exception as e:
             error_msg.set(f"Error while playing level: {e}")
             is_loaded.set(True)
             use_gen.set(remember_use_gen)
-        finally:
-            # game.getWindow().dispose()
-            gateway.java_process.kill()
-            gateway.close()
 
         is_loaded.set(True)
         use_gen.set(remember_use_gen)  # only set use_gen to True if it was previously
@@ -388,6 +380,9 @@ def TOAD_GUI():
     @threaded
     def fix_current_level():
         error_msg.set(f"Trying to fix level using {dropdown_value.get()} ...")
+
+        patcher_human_play_button.state(['disabled'])
+        patcher_agent_play_button.state(['disabled'])
         patcher_apply_button.state(['disabled'])
         patcher_dropdown.state(['disabled'])
 
@@ -403,7 +398,7 @@ def TOAD_GUI():
 
         broken_spots = []
         with MarioAI() as mario:
-            progress = mario.evaluate_level(level).getCompletionPercentage()
+            progress = mario.evaluate_level(level, AgentType.AstarDynamicPlanning, False, 4000, 30).getCompletionPercentage()
 
             tries = 0
             while progress < 0.99:
@@ -417,7 +412,7 @@ def TOAD_GUI():
                         b_range
                     )
 
-                    progress = mario.evaluate_level(level).getCompletionPercentage()
+                    progress = mario.evaluate_level(level, AgentType.AstarDynamicPlanning, False, 4000, 30).getCompletionPercentage()
                     tries += 1
 
                     level_obj.ascii_level = [line + "\n" for line in level]
@@ -426,6 +421,8 @@ def TOAD_GUI():
                 except Exception as e:
                     print(f"Patcher caused exception: {e}", file=sys.stderr)
 
+            patcher_human_play_button.state(['!disabled'])
+            patcher_agent_play_button.state(['!disabled'])
             patcher_apply_button.state(['!disabled'])
             patcher_dropdown.state(['!disabled'])
 
@@ -503,23 +500,27 @@ def TOAD_GUI():
     # Play and Controls frame
     p_c_frame = ttk.Frame(tab_control)
     play_button = ttk.Button(p_c_frame, compound='top', image=play_level_icon, text='Play level',
-                             state='disabled', command=play_level)
+                             state='disabled', command=lambda: play_level(AgentType.Human, True, 30, 200))
 
     tab_control.add(p_c_frame, text="Play / Edit")
     tab_control.add(repair_tab, text="Repair")
 
-    patcher_explain_label = ttk.Label(repair_tab, text="Algorithm used to fix the broken level section")
+    patcher_explain_label = ttk.Label(repair_tab, text="Patching algorithm")
     keys: list[str] = list(patching.patchers.keys())
     dropdown_value.set(keys[0])
     patcher_dropdown = ttk.OptionMenu(repair_tab, dropdown_value, keys[0], *keys)
     patcher_dropdown.config(width=20)
 
+    patcher_human_play_button = ttk.Button(repair_tab, text="Play", compound="top", image=play_level_icon, command=lambda: play_level(AgentType.Human, True, 30, 200))
+    patcher_agent_play_button = ttk.Button(repair_tab, text="AI Agent", compound="top", image=blue_play_level_icon, command=lambda: play_level(AgentType.AstarDynamicPlanning, True, 30, 200))
     patcher_apply_button = ttk.Button(repair_tab, text="Apply", command=fix_current_level)
 
-    patcher_explain_label.grid(column=0, row=0, sticky=(N, W), padx=25, pady=(25, 0))
-    patcher_dropdown.grid(column=0, row=1, sticky=(N, W), padx=50, pady=20)
-    patcher_apply_button.grid(column=1, row=0, columnspan=10, rowspan=4, sticky=(N, W, S, E), padx=(300, 0), pady=10)
-    patcher_apply_button.columnconfigure(1, weight=1)
+    patcher_explain_label.grid(column=0, row=0, sticky=(N, W), padx=(20, 0), pady=(25, 0))
+    patcher_dropdown.grid(column=0, row=1, sticky=(N, W), padx=(20, 10), pady=20)
+
+    patcher_apply_button.grid(column=1, row=1, pady=(20, 0), sticky=(N, W))
+    patcher_human_play_button.grid(column=2, row=0, rowspan=2, padx=(225, 0), pady=(15, 0), sticky=(N, W, S, E))
+    patcher_agent_play_button.grid(column=3, row=0, rowspan=2, padx=(15, 0), pady=(15, 0), sticky=(N, W, S, E))
 
     tab_control.grid(column=0, row=7, sticky=(N, S, E, W), columnspan=3, padx=5, pady=5)
 

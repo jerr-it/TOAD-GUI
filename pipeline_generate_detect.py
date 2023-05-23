@@ -8,7 +8,7 @@ import pandas as pd
 
 from datetime import datetime
 
-from utils.mario_ai import MarioAI
+from utils.mario_ai import MarioAI, AgentType
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
@@ -69,7 +69,7 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
             ascii_level = place_a_mario_token(ascii_level)
             ascii_level = remove_newlines(ascii_level)
 
-            result = mario.evaluate_level(ascii_level)
+            result = mario.evaluate_level(ascii_level, AgentType.AstarDynamicPlanning, False, 4000, 30)
             progress = result.getCompletionPercentage()
 
     return ascii_level, progress, attempts
