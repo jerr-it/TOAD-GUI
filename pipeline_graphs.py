@@ -4,52 +4,42 @@ import matplotlib.pyplot as plt
 
 from patching.metrics import metrics
 
-
-def list_metric_files() -> list[str]:
-    """
-    List all metric files in the data directory.
-    :return: Paths to all files containing metric data
-    """
-    base_path: str = os.path.join(os.path.curdir, "data")
-    file_names: list[str] = []
-
-    for root, dirs, files in os.walk(base_path):
-        for file in files:
-            if file == "metrics.csv":
-                file_names.append(os.path.join(root, file))
-
-    return file_names
+METRICS_DF_PATH = "./data/metrics.csv"
 
 
-def aggregate_dataframes(file_names: list[str]) -> pd.DataFrame:
-    """
-    Aggregate all dataframes from the given files into one dataframe.
-    CSV files are split, there is one per generator.
-    :param file_names: File names to the CSV files
-    :return: Aggregated dataframe
-    """
-    dataframes = []
-
-    for file_name in file_names:
-        dataframes.append(pd.read_csv(file_name))
-
-    return pd.concat(dataframes)
+def load_metrics_df() -> pd.DataFrame:
+    return pd.read_csv(METRICS_DF_PATH)
 
 
-file_names: list[str] = list_metric_files()
-data: pd.DataFrame = aggregate_dataframes(file_names)
+def total_average(mdf: pd.DataFrame, metric: str, unit: str, generator: str | None = None):
+    # Filter out all rows whose 'level' column does not contain generator
+    if generator is not None:
+        mdf = mdf[mdf["level"].str.contains(generator)]
 
-for metric in metrics:
-    # Group data by column 'patcher' and calculate the mean for each group
-    grouped_data = data.groupby("patcher")[metric["name"]].mean()
+    # Group by 'patcher' column
+    mdf = mdf.groupby("patcher")
 
-    plt.figure(figsize=(10, 5))
-    ax = grouped_data.plot(kind="bar")
-    ax.set_xticklabels(grouped_data.index, rotation=0)
+    # Calculate the mean of the 'metric' column
+    mdf = mdf[metric].median()
 
-    plt.xlabel("Patcher")
-    plt.ylabel(metric["name"] + " (" + metric["unit"] + ")")
+    # Sort the values in descending order
+    mdf = mdf.sort_values(ascending=False)
 
-    plt.title("Average " + metric["name"])
-
+    # Plot the values
+    mdf.plot.barh()
+    plt.xlabel(f"{metric} ({unit})")
+    plt.ylabel("Patcher")
+    group_name = generator if generator is not None else "All"
+    plt.title(f"Average {metric} ({unit}) per Patcher ({group_name})")
+    plt.tight_layout()
+    # plt.savefig(f"./data/{metric}_per_patcher.png")
     plt.show()
+    
+
+    
+    
+
+metrics_df = load_metrics_df()
+
+total_average(metrics_df.copy(), "Runtime", "s")
+total_average(metrics_df, "Runtime", "s", "1-3")

@@ -20,7 +20,6 @@ from utils.level_utils import read_level_from_file, one_hot_to_ascii_level, plac
 from utils.level_image_gen import LevelImageGen
 from utils.toad_gan_utils import load_trained_pyramid, generate_sample, TOADGAN_obj
 
-
 # Check if windows user
 if platform.system() == "Windows":
     import ctypes
@@ -267,7 +266,7 @@ def TOAD_GUI():
             error_msg.set("Level generated!")
         return
 
-    def redraw_image(edit_mode=False, rectangle=[(0, 0), (16, 16)], scale=0):
+    def redraw_image(edit_mode=False, rectangle=[(0, 0), (16, 16)], scale=0, broken_rectangles: list = []):
         if is_loaded.get():
             # Check if a Mario token exists - if not, we need to place one
             m_exists = False
@@ -281,10 +280,18 @@ def TOAD_GUI():
 
             # Render Image
             pil_img = ImgGen.render(level_obj.ascii_level)
+            l_draw = ImageDraw.Draw(pil_img)
+
+            for rect in broken_rectangles:
+                x_range, y_range = rect
+                scaled_rect = [
+                    (x_range[0] * 16, y_range[0] * 16),
+                    (x_range[1] * 16, y_range[1] * 16)
+                ]
+                l_draw.rectangle(scaled_rect, outline=(255, 0, 0), width=4)
 
             if edit_mode:
                 # Add numbers to rows and cols
-                l_draw = ImageDraw.Draw(pil_img)
                 for y in range(level_obj.oh_level.shape[-2]):
                     l_draw.multiline_text((1, 4 + y * 16), str(y), (255, 255, 255),
                                           stroke_width=-1, stroke_fill=(0, 0, 0))
@@ -394,21 +401,28 @@ def TOAD_GUI():
         level_width = len(level[0])
         level_height = len(level)
 
+        broken_spots = []
         with MarioAI() as mario:
             progress = mario.evaluate_level(level).getCompletionPercentage()
 
             tries = 0
             while progress < 0.99:
                 try:
-                    pass
+                    b_range = calculate_broken_range(progress, level_width, level_height)
+                    broken_spots.append(b_range)
+
                     level = patching.patchers[dropdown_value.get()].patch(
                         orig_level,
                         level,
-                        calculate_broken_range(progress, level_width, level_height)
+                        b_range
                     )
 
                     progress = mario.evaluate_level(level).getCompletionPercentage()
                     tries += 1
+
+                    level_obj.ascii_level = [line + "\n" for line in level]
+                    level_obj.ascii_level[-1] = level_obj.ascii_level[-1].rstrip()
+                    redraw_image(broken_rectangles=broken_spots)
                 except Exception as e:
                     print(f"Patcher caused exception: {e}", file=sys.stderr)
 
@@ -417,8 +431,9 @@ def TOAD_GUI():
 
             level_obj.ascii_level = [line + "\n" for line in level]
             level_obj.ascii_level[-1] = level_obj.ascii_level[-1].rstrip()
-            redraw_image()
-            error_msg.set(f"Fixed level using {dropdown_value.get()} in {tries} attempts" if tries > 0 else "Level is playable")
+            redraw_image(broken_rectangles=broken_spots)
+            error_msg.set(
+                f"Fixed level using {dropdown_value.get()} in {tries} attempts" if tries > 0 else "Level is playable")
 
     # ---------------------------------------- Layout ----------------------------------------
 
