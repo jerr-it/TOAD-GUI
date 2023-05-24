@@ -16,6 +16,7 @@ from patching.metrics.tpkl import TPKL
 from patching.metrics.tries import Tries
 
 metrics: list[Metric] = [
+    RollingDifficulty(),
     CollectedMushrooms(),
     Coins(),
     TotalKills(),
@@ -28,7 +29,6 @@ metrics: list[Metric] = [
     PatternVariation(),
     Tries(),
     Difficulty(),
-    RollingDifficulty(),
     TPKL(),
     Memory(),
     Runtime(),
