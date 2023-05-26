@@ -215,9 +215,6 @@ def repair_level(
                     for metric in metrics:
                         metric.iter_hook(mario_result, fixed_level)
 
-                fixed_level = mark_path(fixed_level, mario_result)
-                level_dict[patcher_name] = fixed_level
-
                 for metric in reversed(metrics):
                     result = metric.post_hook(
                         mario_result,
@@ -228,6 +225,9 @@ def repair_level(
 
                     for metric_name, metric_value in result.items():
                         metrics_data[0][metric_name] = metric_value
+
+                fixed_level = mark_path(fixed_level, mario_result)
+                level_dict[patcher_name] = fixed_level
     except Exception as e:
         print(f"Fixing process ended unexpectedly: {e}", file=sys.stderr)
 

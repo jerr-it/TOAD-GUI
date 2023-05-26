@@ -1,3 +1,5 @@
+import statistics
+
 import numpy as np
 import py4j.java_gateway
 
@@ -17,8 +19,8 @@ class Difficulty(Metric):
         generated_level: list[str],
         generated_mario_result: py4j.java_gateway.JavaObject,
     ):
-        self.original_difficulty = difficulty(original_level, original_mario_result)
-        self.generated_difficulty = difficulty(generated_level, generated_mario_result)
+        self.original_difficulty = statistics.fmean(rolling_difficulty(original_level, original_mario_result))
+        self.generated_difficulty = statistics.fmean(rolling_difficulty(generated_level, generated_mario_result))
 
     def iter_hook(
         self,
@@ -37,7 +39,7 @@ class Difficulty(Metric):
         return {
             "Difficulty original": self.original_difficulty,
             "Difficulty generated": self.generated_difficulty,
-            "Difficulty fixed": difficulty(fixed_level, mario_result)
+            "Difficulty fixed": statistics.fmean(rolling_difficulty(fixed_level, mario_result))
         }
 
 
@@ -77,18 +79,40 @@ class RollingDifficulty(Metric):
         }
 
 
-def rolling_difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, window_size: int = 10) -> list[float]:
+def rolling_difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, window_size: int | None = 10) -> list[float]:
     width = len(level[0])
+
+    diff_dict = {}
+    nplevel = np.array([list(row) for row in level])
+    m_path = mario_result.getMarioPath()
+    path: list[list[int]] = []
+    for i in range(nplevel.shape[1]):
+        path.append([])
+
+    for position in m_path:
+        x: int = position.getX()
+        y: int = position.getY()
+
+        if y >= nplevel.shape[1]:
+            continue
+
+        if y not in path[x]:
+            path[x].append(y)
 
     difficulties: list[float] = []
     for window_start in range(0, width - window_size):
-        window_difficulty = difficulty(level, mario_result, (window_start, window_start + window_size))
+        window_difficulty = difficulty(
+            nplevel,
+            path,
+            (window_start, window_start + window_size) if window_size is not None else None,
+            diff_dict
+        )
         difficulties.append(window_difficulty)
 
     return difficulties
 
 
-def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, window: tuple[int, int] | None = None) -> float:
+def difficulty(level: list[str] | np.ndarray, path: list[list[int]], window: tuple[int, int] | None = None, diff_dict: dict = None) -> float:
     """
     Consists of a static and a dynamic evaluation.
     Static evaluation is based on data gathered by analysing the level itself.
@@ -99,7 +123,8 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, win
     :return: Difficulty score, higher meaning more difficult
     """
     # Convert level to numpy ndarray
-    level = np.array([list(row) for row in level])
+    if isinstance(level, list):
+        level = np.array([list(row) for row in level])
 
     # Determine the height for every vertical column
     width: int = level.shape[1]
@@ -108,68 +133,50 @@ def difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObject, win
     if window is None:
         window = (0, width)
 
-    enemy_count: int = 0
-    cannon_count: int = 0
-    tube_count: int = 0
-    powerup_count: int = 0
+    score: float = 0.0
 
-    path = mario_result.getMarioPath()  # ArrayList<MarioPosition>
+    for column_start in range(window[0], window[1] - 1):
+        section = level[:, column_start:column_start+2]
+        section_b = section.tobytes()
 
-    current_gap_width = 0
-    jumps: list[int] = []  # List of gap lengths mario jumped over
-    covered_x_position = 0
-    for position in path:
-        x_pos = position.getX()
-        y_pos = position.getY()
-
-        if x_pos < window[0] or x_pos > window[1]:
+        if diff_dict is not None and section_b in diff_dict:
+            score += diff_dict[section_b]
             continue
 
-        if y_pos >= height:
-            continue
+        left_column = level[:, column_start]
+        right_column = level[:, column_start+1]
 
-        if x_pos <= covered_x_position:
-            continue
+        enemy_count = count_enemies(left_column) + count_enemies(right_column)
+        cannon_count = count_cannon(left_column) + count_cannon(right_column)
+        tube_count = count_tubes(section)
+        powerup_count = count_powerups(left_column) + count_powerups(right_column)
+        gap_count = count_gaps(level, window, path)
 
-        is_gap = True
-        for y in range(y_pos, height):
-            if level[y][x_pos] not in NON_BLOCKS:
-                is_gap = False
-                break
+        section_score = enemy_count + cannon_count + tube_count + gap_count - powerup_count
 
-        covered_x_position += 1
-        level[y_pos][x_pos] = MARIO_PATH_TOKEN
-
-        if is_gap:
-            current_gap_width += 1
-        else:
-            if current_gap_width > 0:
-                jumps.append(current_gap_width)
-                current_gap_width = 0
-
-    easy_jumps = 0
-    difficult_jumps = 0
-    for jump in jumps:
-        if jump <= 6:
-            easy_jumps += 1
-        else:
-            difficult_jumps += 1
-
-    for column in range(window[0], min(window[1], width-1)):
-        enemy_count += count_enemies(level[:, column])
-        cannon_count += count_cannon(level[:, column])
-        tube_count += count_tubes((level[:, column], level[:, column + 1]))
-        powerup_count += count_powerups(level[:, column])
-
-    score = \
-        + enemy_count \
-        + cannon_count \
-        + tube_count \
-        - powerup_count \
-        + easy_jumps * 0.5 \
-        + difficult_jumps * 2.0 \
+        if diff_dict is not None:
+            diff_dict[section_b] = section_score
+        score += section_score
 
     return score
+
+
+def count_gaps(level: np.ndarray, window: tuple[int, int], path: list[list[int]]) -> int:
+    gap_count = 0
+
+    for column in range(window[0], window[1]):
+        mario_heights = path[column]
+        for mario_height in mario_heights:
+            is_gap = True
+            for h in range(mario_height, level.shape[0]):
+                if level[h, column] not in NON_BLOCKS:
+                    is_gap = False
+                    break
+
+            if is_gap:
+                gap_count += 1
+
+    return gap_count
 
 
 def count_enemies(column: np.ndarray) -> int:
