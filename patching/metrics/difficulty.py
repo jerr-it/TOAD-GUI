@@ -85,9 +85,7 @@ def rolling_difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObj
     diff_dict = {}
     nplevel = np.array([list(row) for row in level])
     m_path = mario_result.getMarioPath()
-    path: list[list[int]] = []
-    for i in range(nplevel.shape[1]):
-        path.append([])
+    path: list[int] = [0] * width
 
     for position in m_path:
         x: int = position.getX()
@@ -96,8 +94,8 @@ def rolling_difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObj
         if y >= nplevel.shape[1]:
             continue
 
-        if y not in path[x]:
-            path[x].append(y)
+        if y > path[x]:
+            path[x] = y
 
     difficulties: list[float] = []
     for window_start in range(0, width - window_size):
@@ -112,7 +110,7 @@ def rolling_difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObj
     return difficulties
 
 
-def difficulty(level: list[str] | np.ndarray, path: list[list[int]], window: tuple[int, int] | None = None, diff_dict: dict = None) -> float:
+def difficulty(level: list[str] | np.ndarray, path: list[int], window: tuple[int, int] | None = None, diff_dict: dict = None) -> float:
     """
     Consists of a static and a dynamic evaluation.
     Static evaluation is based on data gathered by analysing the level itself.
@@ -150,7 +148,7 @@ def difficulty(level: list[str] | np.ndarray, path: list[list[int]], window: tup
         cannon_count = count_cannon(left_column) + count_cannon(right_column)
         tube_count = count_tubes(section)
         powerup_count = count_powerups(left_column) + count_powerups(right_column)
-        gap_count = count_gaps(level, window, path)
+        gap_count = count_gaps(level, (column_start, column_start+1), path)
 
         section_score = enemy_count + cannon_count + tube_count + gap_count - powerup_count
 
@@ -161,20 +159,19 @@ def difficulty(level: list[str] | np.ndarray, path: list[list[int]], window: tup
     return score
 
 
-def count_gaps(level: np.ndarray, window: tuple[int, int], path: list[list[int]]) -> int:
+def count_gaps(level: np.ndarray, window: tuple[int, int], path: list[int]) -> int:
     gap_count = 0
 
     for column in range(window[0], window[1]):
-        mario_heights = path[column]
-        for mario_height in mario_heights:
-            is_gap = True
-            for h in range(mario_height, level.shape[0]):
-                if level[h, column] not in NON_BLOCKS:
-                    is_gap = False
-                    break
+        mario_height = path[column]
+        is_gap = True
+        for h in range(mario_height, level.shape[0]):
+            if level[h, column] not in NON_BLOCKS:
+                is_gap = False
+                break
 
-            if is_gap:
-                gap_count += 1
+        if is_gap:
+            gap_count += 1
 
     return gap_count
 
