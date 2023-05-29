@@ -342,13 +342,12 @@ def TOAD_GUI():
         use_gen.set(remember_use_gen)  # only set use_gen to True if it was previously
         return
 
-    def load_original_level(generator_path: str) -> list[str]:
+    def load_original_level(level_id: str) -> list[str]:
         """
         Loads the original level the given generator was trained on
         :param generator_path: Path to the generator
         :return: Original level the generator was trained on
         """
-        level_id: str = generator_path.split("_")[-1]
         level_path: str = os.path.join(os.path.curdir, "levels", "originals", f"lvl_{level_id}.txt")
 
         level: list[str]
@@ -388,7 +387,7 @@ def TOAD_GUI():
         patcher_dropdown.state(['disabled'])
 
         nonlocal generator_name
-        orig_level = load_original_level(generator_name)
+        orig_level = load_original_level(generator_name.split("_")[-1] if generator_name != "" else load_string_gen.get().split("_")[-1].removesuffix(".txt"))
 
         level = []
         for line in level_obj.ascii_level:
@@ -418,6 +417,7 @@ def TOAD_GUI():
 
                     level_obj.ascii_level = [line + "\n" for line in level]
                     level_obj.ascii_level[-1] = level_obj.ascii_level[-1].rstrip()
+                    level_obj.oh_level = ascii_to_one_hot_level(level_obj.ascii_level, level_obj.tokens)
                     redraw_image(broken_rectangles=broken_spots)
                 except Exception as e:
                     print(f"Patcher caused exception: {e}", file=sys.stderr)
@@ -429,6 +429,7 @@ def TOAD_GUI():
 
             level_obj.ascii_level = [line + "\n" for line in level]
             level_obj.ascii_level[-1] = level_obj.ascii_level[-1].rstrip()
+            level_obj.oh_level = ascii_to_one_hot_level(level_obj.ascii_level, level_obj.tokens)
             redraw_image(broken_rectangles=broken_spots)
             error_msg.set(
                 f"Fixed level using {dropdown_value.get()} in {tries} attempts" if tries > 0 else "Level is playable")
