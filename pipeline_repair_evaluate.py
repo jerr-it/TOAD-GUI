@@ -13,7 +13,7 @@ from utils.level_utils import place_a_mario_token
 from utils.mario_ai import MarioAI, AgentType
 from utils.token_defs import MARIO_PATH_TOKEN
 
-REPAIR_STAGE_THREADS = 8
+REPAIR_STAGE_THREADS = 12
 
 
 def list_generators() -> list[str]:
@@ -163,6 +163,7 @@ def repair_level(
     :param generator_path: Path to the generator the level was created from
     :param metrics_df: Existing metrics data, to avoid repairing a level twice
     :return: (
+        level path
         Dataframe containing metrics evaluated on the different patchers,
         dict of levels fixed (one per patcher)
     )
@@ -255,6 +256,9 @@ def save_patched_level(level_path: str, patcher_name: str, level: list[str]):
 
 
 def calculate_eta(times: list[float], remaining: int) -> str:
+    if len(times) == 0:
+        return "Estimating ..."
+
     average = sum(times) / len(times)
     eta = remaining * average
     return time.strftime("%H:%M:%S", time.gmtime(eta))
@@ -290,17 +294,20 @@ def pipeline_repair_evaluate():
 
         for future in concurrent.futures.as_completed(futures):
             level_path, new_df, level_dict = future.result()
-            metrics_df = pd.concat([metrics_df, new_df], ignore_index=True)
 
             for patcher_name, level in level_dict.items():
                 save_patched_level(level_path, patcher_name, level)
 
-            metrics_df.to_csv(os.path.join(os.path.curdir, "data", "metrics.csv"), index=False)
+            if not new_df.empty:
+                metrics_df = pd.concat([metrics_df, new_df], ignore_index=True)
+                metrics_df.to_csv(os.path.join(os.path.curdir, "data", "metrics.csv"), index=False)
 
             end_counter = time.time()
-            times.append(end_counter - start_counter)
+            if not new_df.empty:
+                times.append(end_counter - start_counter)
             start_counter = end_counter
             level_idx += 1
+
             print(f"Completed level {level_idx} of {level_count} | ETA: {calculate_eta(times, level_count - level_idx)}")
 
 
