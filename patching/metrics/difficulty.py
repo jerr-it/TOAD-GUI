@@ -11,6 +11,7 @@ class Difficulty(Metric):
     def __init__(self):
         self.original_difficulty: float = 0.0
         self.generated_difficulty: float = 0.0
+        self.lookup_table = {}
 
     def pre_hook(
         self,
@@ -19,8 +20,23 @@ class Difficulty(Metric):
         generated_level: list[str],
         generated_mario_result: py4j.java_gateway.JavaObject,
     ):
-        self.original_difficulty = statistics.fmean(rolling_difficulty(original_level, original_mario_result))
-        self.generated_difficulty = statistics.fmean(rolling_difficulty(generated_level, generated_mario_result))
+        original_key = "@".join(original_level)
+
+        if original_key in self.lookup_table:
+            self.original_difficulty = self.lookup_table[original_key]
+        else:
+            orig_difficulty = statistics.fmean(rolling_difficulty(original_level, original_mario_result))
+            self.lookup_table[original_key] = orig_difficulty
+            self.original_difficulty = orig_difficulty
+
+        generated_key = "@".join(generated_level)
+
+        if generated_key in self.lookup_table:
+            self.generated_difficulty = self.lookup_table[generated_key]
+        else:
+            gen_difficulty = statistics.fmean(rolling_difficulty(generated_level, generated_mario_result))
+            self.lookup_table[generated_key] = gen_difficulty
+            self.generated_difficulty = gen_difficulty
 
     def iter_hook(
         self,
@@ -36,10 +52,18 @@ class Difficulty(Metric):
             generated_level: list[str],
             fixed_level: list[str],
     ):
+        fixed_key = "@".join(fixed_level)
+
+        if fixed_key in self.lookup_table:
+            fixed_difficulty = self.lookup_table[fixed_key]
+        else:
+            fixed_difficulty = statistics.fmean(rolling_difficulty(fixed_level, mario_result))
+            self.lookup_table[fixed_key] = fixed_difficulty
+
         return {
             "Difficulty original": self.original_difficulty,
             "Difficulty generated": self.generated_difficulty,
-            "Difficulty fixed": statistics.fmean(rolling_difficulty(fixed_level, mario_result))
+            "Difficulty fixed": fixed_difficulty
         }
 
 
