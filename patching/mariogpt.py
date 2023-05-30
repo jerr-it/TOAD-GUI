@@ -1,6 +1,7 @@
 import numpy as np
+import py4j.java_gateway
 
-from mario_gpt import MarioLM, SampleOutput
+from mario_gpt import MarioLM
 from patching.patcher import Patcher
 
 PROMPTS = {
@@ -33,6 +34,7 @@ class MarioGPT(Patcher):
             level: list[str],  # Level formatted as a list of strings row-wise
             broken_range: tuple[tuple[int, int], tuple[int, int]],  # (x_range, y_range)
             generator_path: str = "",
+            mario_result: py4j.java_gateway.JavaObject = None,
     ) -> list[str]:
         level = np.array([list(row) for row in level])
 

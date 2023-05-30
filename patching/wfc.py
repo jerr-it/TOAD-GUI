@@ -1,3 +1,5 @@
+import py4j.java_gateway
+
 from patching.algorithms.wavefunctioncollapse.adapters.level_adapter import LevelAdapter
 from patching.algorithms.wavefunctioncollapse.wfc import WFC
 from patching.patcher import Patcher
@@ -14,6 +16,7 @@ class WFCPatcher(Patcher):
             level: list[str],  # Level formatted as a list of strings row-wise
             broken_range: tuple[tuple[int, int], tuple[int, int]],  # (x_range, y_range)
             generator_path: str = "",
+            mario_result: py4j.java_gateway.JavaObject = None,
     ) -> list[str]:
         level_adapter = LevelAdapter(level, 3)
 

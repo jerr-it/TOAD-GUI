@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import py4j.java_gateway
 
 from patching.patcher import Patcher
 
@@ -17,6 +18,7 @@ class BestFitStitching(Patcher):
             level: list[str],  # Level formatted as a list of strings row-wise
             broken_range: tuple[tuple[int, int], tuple[int, int]],  # (x_range, y_range)
             generator_path: str = "",
+            mario_result: py4j.java_gateway.JavaObject = None,
     ) -> list[str]:
         level_key = "@".join(level)
         if level_key not in self.record:

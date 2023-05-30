@@ -199,13 +199,14 @@ def repair_level(
 
                 fixed_level: list[str] = generated_level.copy()
                 current_progress = progress
+                mario_result = generated_result
 
                 while current_progress < 0.99:
                     broken_range = calculate_broken_range(current_progress, level_width, level_height)
 
                     try:
                         fixed_level = check_mario_token(
-                            patcher.patch(original_level, fixed_level, broken_range, generator_path)
+                            patcher.patch(original_level, fixed_level, broken_range, generator_path, mario_result)
                         )
 
                         mario_result = mario.evaluate_level(fixed_level, AgentType.AstarDynamicPlanning, False, 4000, 30)

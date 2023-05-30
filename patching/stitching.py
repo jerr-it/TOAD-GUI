@@ -1,4 +1,5 @@
 import numpy as np
+import py4j.java_gateway
 
 from patching.patcher import Patcher
 
@@ -14,6 +15,7 @@ class Stitching(Patcher):
             level: list[str],  # Level formatted as a list of strings row-wise
             broken_range: tuple[tuple[int, int], tuple[int, int]],  # (x_range, y_range)
             generator_path: str = "",
+            mario_result: py4j.java_gateway.JavaObject = None,
     ) -> list[str]:
         # Convert levels to 2d numpy arrays, splitting strings into chars
         original_level = np.array([list(row) for row in original_level])
