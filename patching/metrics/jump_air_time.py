@@ -9,11 +9,11 @@ class JumpAirTime(Metric):
         self.original_air_time = None
 
     def pre_hook(
-        self,
-        original_level: list[str],
-        original_mario_result: py4j.java_gateway.JavaObject,
-        generated_level: list[str],
-        generated_mario_result: py4j.java_gateway.JavaObject,
+            self,
+            original_level: list[str],
+            original_mario_result: py4j.java_gateway.JavaObject,
+            generated_level: list[str],
+            generated_mario_result: py4j.java_gateway.JavaObject,
     ):
         self.original_air_time = original_mario_result.getMaxJumpAirTime()
         self.generated_air_time = generated_mario_result.getMaxJumpAirTime()

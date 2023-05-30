@@ -7,6 +7,7 @@ class Stitching(Patcher):
     """
     This patcher fixes the broken range by 'stitching' the broken range from the original into the generated level.
     """
+
     def patch(
             self,
             original_level: list[str],

@@ -9,6 +9,7 @@ class PatternScanner:
     """
     Analyzes the distribution of patterns in the grid.
     """
+
     def __init__(self, grid: np.ndarray, kernel_size: int):
         self.pattern_distribution: dict[Pattern, int] = {}
         self.total_weight: int = 0
@@ -26,7 +27,7 @@ class PatternScanner:
         # Iterate over the grid and count the number of times each pattern occurs, including variations.
         for row in range(self.rows):
             for column in range(self.columns):
-                kernel = Pattern(padded_grid[row:row+kernel_size, column:column+kernel_size])
+                kernel = Pattern(padded_grid[row:row + kernel_size, column:column + kernel_size])
                 variations: list[Pattern] = kernel.create_variations()
 
                 for variation in variations:

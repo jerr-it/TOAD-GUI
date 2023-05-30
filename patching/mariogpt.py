@@ -3,7 +3,6 @@ import numpy as np
 from mario_gpt import MarioLM, SampleOutput
 from patching.patcher import Patcher
 
-
 PROMPTS = {
     "": ["some pipes", "some enemies", "many blocks", "low elevation"],
     "./data/TOAD_GAN_1-1": ["some pipes", "some enemies", "many blocks", "low elevation"],

@@ -9,11 +9,11 @@ class Lives(Metric):
         self.original_lives = None
 
     def pre_hook(
-        self,
-        original_level: list[str],
-        original_mario_result: py4j.java_gateway.JavaObject,
-        generated_level: list[str],
-        generated_mario_result: py4j.java_gateway.JavaObject,
+            self,
+            original_level: list[str],
+            original_mario_result: py4j.java_gateway.JavaObject,
+            generated_level: list[str],
+            generated_mario_result: py4j.java_gateway.JavaObject,
     ):
         self.original_lives = original_mario_result.getCurrentLives()
         self.generated_lives = generated_mario_result.getCurrentLives()

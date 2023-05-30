@@ -5,7 +5,6 @@ from graphs import PATCHER_NAMES
 
 metrics_df = load_metrics_df()
 
-
 for i, patcher in enumerate(PATCHER_NAMES):
     patcher_df = metrics_df[metrics_df["patcher"].str.contains(patcher)]
     patcher_df["Runtime"] = patcher_df["Runtime"] / patcher_df["Tries"]
@@ -14,10 +13,8 @@ for i, patcher in enumerate(PATCHER_NAMES):
     plt.ylabel("Frequency")
     plt.title(f"Runtime per try ({patcher})")
     plt.tight_layout()
-    # Increase the size of the figure
     plt.gcf().set_size_inches(10, 10)
 
-# Fill the 4 right subplots with the mean and median runtime per try for each patcher
 for i, patcher in enumerate(PATCHER_NAMES):
     patcher_df = metrics_df[metrics_df["patcher"].str.contains(patcher)]
 
@@ -34,13 +31,9 @@ for i, patcher in enumerate(PATCHER_NAMES):
     plt.ylabel("Runtime (s)")
     plt.title(f"Runtime per try ({patcher})")
 
-# Make supblots vertically smaller
 plt.subplots_adjust(hspace=0.5)
-# Increase space between bottom and top subplots
 plt.subplots_adjust(top=0.95, bottom=0.1)
-# Make total aspect ratio of the figure 2 by 1
 plt.gcf().set_size_inches(20, 10)
 
-# Save the figure
 plt.savefig("../data/runtime_per_try.png")
 plt.show()

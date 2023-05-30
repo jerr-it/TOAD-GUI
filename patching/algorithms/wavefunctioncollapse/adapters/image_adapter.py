@@ -21,7 +21,7 @@ class ImageAdapter(PatternScanner):
 
     @staticmethod
     def hex_to_pixel(hex: str) -> np.ndarray:
-        return np.array([int(hex[i:i+2], 16) / 255 for i in range(1, len(hex), 2)])
+        return np.array([int(hex[i:i + 2], 16) / 255 for i in range(1, len(hex), 2)])
 
     def on_completion(self, grid: np.ndarray):
         data = np.array([[self.hex_to_pixel(hex) for hex in line] for line in grid])

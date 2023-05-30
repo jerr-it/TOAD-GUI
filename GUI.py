@@ -387,7 +387,8 @@ def TOAD_GUI():
         patcher_dropdown.state(['disabled'])
 
         nonlocal generator_name
-        orig_level = load_original_level(generator_name.split("_")[-1] if generator_name != "" else load_string_gen.get().split("_")[-1].removesuffix(".txt"))
+        orig_level = load_original_level(
+            generator_name.split("_")[-1] if generator_name != "" else load_string_gen.get().split("_")[-1].removesuffix(".txt"))
 
         level = []
         for line in level_obj.ascii_level:
@@ -515,8 +516,10 @@ def TOAD_GUI():
 
     repair_tab.columnconfigure(1, weight=1)
 
-    patcher_human_play_button = ttk.Button(repair_tab, text="Play", compound="top", image=play_level_icon, command=lambda: play_level(AgentType.Human, True, 30, 200))
-    patcher_agent_play_button = ttk.Button(repair_tab, text="AI Agent", compound="top", image=blue_play_level_icon, command=lambda: play_level(AgentType.AstarDynamicPlanning, True, 30, 200))
+    patcher_human_play_button = ttk.Button(repair_tab, text="Play", compound="top", image=play_level_icon,
+                                           command=lambda: play_level(AgentType.Human, True, 30, 200))
+    patcher_agent_play_button = ttk.Button(repair_tab, text="AI Agent", compound="top", image=blue_play_level_icon,
+                                           command=lambda: play_level(AgentType.AstarDynamicPlanning, True, 30, 200))
     patcher_apply_button = ttk.Button(repair_tab, text="Apply", compound="top", image=apply_icon, command=fix_current_level)
 
     patcher_explain_label.grid(column=0, row=0, sticky=(N, W), padx=(20, 0), pady=(25, 20))

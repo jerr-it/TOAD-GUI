@@ -25,22 +25,22 @@ class WFC:
 
         # Create empty wave function grid
         self.grid = np.array([
-                [WaveFunction(self.pattern_scanner) for _ in range(x_range[1] - x_range[0])]
-                for _ in range(y_range[1] - y_range[0])
-            ]
+            [WaveFunction(self.pattern_scanner) for _ in range(x_range[1] - x_range[0])]
+            for _ in range(y_range[1] - y_range[0])
+        ]
         )
 
         to_replace = (
-            (x_range[0]+1, x_range[1]+1),
-            (y_range[0]+1, y_range[1]+1)
+            (x_range[0] + 1, x_range[1] + 1),
+            (y_range[0] + 1, y_range[1] + 1)
         )
         x_range, y_range = to_replace
 
         # Initialize edges of the grid for a better fit
-        for column in [x_range[0], x_range[1]-1]:
+        for column in [x_range[0], x_range[1] - 1]:
             for row in range(y_range[0], y_range[1]):
                 # Extract 3x3 pattern from level
-                pattern_arr = level[row-1:row+2, column-1:column+2]
+                pattern_arr = level[row - 1:row + 2, column - 1:column + 2]
                 wave = self.find_partly_matching_pattern(pattern_arr, self.pattern_scanner)
 
                 # Insert wave into self.grid

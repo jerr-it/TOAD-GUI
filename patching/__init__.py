@@ -4,7 +4,6 @@ from patching.mariogpt import MarioGPT
 from patching.stitching import Stitching
 from patching.wfc import WFCPatcher
 
-
 patchers = {
     # "MarioGPT": MarioGPT(),
     "Stitching": Stitching(),

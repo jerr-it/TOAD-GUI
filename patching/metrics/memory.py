@@ -7,19 +7,19 @@ from patching.metrics.metric import Metric
 
 class Memory(Metric):
     def pre_hook(
-        self,
-        original_level: list[str],
-        original_mario_result: py4j.java_gateway.JavaObject,
-        generated_level: list[str],
-        generated_mario_result: py4j.java_gateway.JavaObject,
+            self,
+            original_level: list[str],
+            original_mario_result: py4j.java_gateway.JavaObject,
+            generated_level: list[str],
+            generated_mario_result: py4j.java_gateway.JavaObject,
     ):
         tracemalloc.clear_traces()
         tracemalloc.start()
 
     def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
+            self,
+            mario_result: py4j.java_gateway.JavaObject,
+            fixed_level: list[str],
     ):
         pass
 

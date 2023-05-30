@@ -14,11 +14,11 @@ class Difficulty(Metric):
         self.lookup_table = {}
 
     def pre_hook(
-        self,
-        original_level: list[str],
-        original_mario_result: py4j.java_gateway.JavaObject,
-        generated_level: list[str],
-        generated_mario_result: py4j.java_gateway.JavaObject,
+            self,
+            original_level: list[str],
+            original_mario_result: py4j.java_gateway.JavaObject,
+            generated_level: list[str],
+            generated_mario_result: py4j.java_gateway.JavaObject,
     ):
         original_key = "@".join(original_level)
 
@@ -39,9 +39,9 @@ class Difficulty(Metric):
             self.generated_difficulty = gen_difficulty
 
     def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
+            self,
+            mario_result: py4j.java_gateway.JavaObject,
+            fixed_level: list[str],
     ):
         pass
 
@@ -73,28 +73,28 @@ class RollingDifficulty(Metric):
         self.original_rolling_difficulty = None
 
     def pre_hook(
-        self,
-        original_level: list[str],
-        original_mario_result: py4j.java_gateway.JavaObject,
-        generated_level: list[str],
-        generated_mario_result: py4j.java_gateway.JavaObject,
+            self,
+            original_level: list[str],
+            original_mario_result: py4j.java_gateway.JavaObject,
+            generated_level: list[str],
+            generated_mario_result: py4j.java_gateway.JavaObject,
     ):
         self.original_rolling_difficulty = "|".join([str(f) for f in rolling_difficulty(original_level, original_mario_result)])
         self.generated_rolling_difficulty = "|".join([str(f) for f in rolling_difficulty(generated_level, generated_mario_result)])
 
     def iter_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        fixed_level: list[str],
+            self,
+            mario_result: py4j.java_gateway.JavaObject,
+            fixed_level: list[str],
     ):
         pass
 
     def post_hook(
-        self,
-        mario_result: py4j.java_gateway.JavaObject,
-        original_level: list[str],
-        generated_level: list[str],
-        fixed_level: list[str],
+            self,
+            mario_result: py4j.java_gateway.JavaObject,
+            original_level: list[str],
+            generated_level: list[str],
+            fixed_level: list[str],
     ) -> dict[str, object]:
         return {
             "Original rolling difficulty": self.original_rolling_difficulty,
@@ -158,7 +158,7 @@ def difficulty(level: list[str] | np.ndarray, path: list[int], window: tuple[int
     score: float = 0.0
 
     for column_start in range(window[0], window[1] - 1):
-        section = level[:, column_start:column_start+2]
+        section = level[:, column_start:column_start + 2]
         section_b = section.tobytes()
 
         if diff_dict is not None and section_b in diff_dict:
@@ -166,13 +166,13 @@ def difficulty(level: list[str] | np.ndarray, path: list[int], window: tuple[int
             continue
 
         left_column = level[:, column_start]
-        right_column = level[:, column_start+1]
+        right_column = level[:, column_start + 1]
 
         enemy_count = count_enemies(left_column) + count_enemies(right_column)
         cannon_count = count_cannon(left_column) + count_cannon(right_column)
         tube_count = count_tubes(section)
         powerup_count = count_powerups(left_column) + count_powerups(right_column)
-        gap_count = count_gaps(level, (column_start, column_start+1), path)
+        gap_count = count_gaps(level, (column_start, column_start + 1), path)
 
         section_score = enemy_count + cannon_count + tube_count + gap_count - powerup_count
 

@@ -1,4 +1,3 @@
-
 from patching.algorithms.wavefunctioncollapse.adapters.level_adapter import LevelAdapter
 from patching.algorithms.wavefunctioncollapse.wfc import WFC
 from patching.patcher import Patcher
@@ -8,6 +7,7 @@ class WFCPatcher(Patcher):
     """
     This patcher uses the Wave Function Collapse algorithm to fix broken level sections
     """
+
     def patch(
             self,
             original_level: list[str],
@@ -25,7 +25,7 @@ class WFCPatcher(Patcher):
         x_range, y_range = broken_range
 
         for row in range(y_range[0], y_range[1]):
-            row_section = "".join(patched_section[row-y_range[0]])
+            row_section = "".join(patched_section[row - y_range[0]])
             level[row] = level[row][:x_range[0]] + row_section + level[row][x_range[1]:]
 
         return level

@@ -28,8 +28,8 @@ class BestFitStitching(Patcher):
         x_range, y_range = broken_range
         x_range_width = x_range[1] - x_range[0]
 
-        broken_column_left = level[:, x_range[0]-1]
-        broken_column_right = level[:, x_range[0]+1]
+        broken_column_left = level[:, x_range[0] - 1]
+        broken_column_right = level[:, x_range[0] + 1]
 
         record_score = -math.inf
         record_pos = -1
@@ -37,8 +37,8 @@ class BestFitStitching(Patcher):
             if x in self.record[level_key]:
                 continue
 
-            original_column_left = original_level[:, x-1]
-            original_column_right = original_level[:, x+1]
+            original_column_left = original_level[:, x - 1]
+            original_column_right = original_level[:, x + 1]
 
             score = \
                 similarity(original_column_left, broken_column_left) \
