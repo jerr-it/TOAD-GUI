@@ -37,14 +37,12 @@ class MarioGPT(Patcher):
         level = np.array([list(row) for row in level])
 
         x_range, y_range = broken_range
-        print("a")
-        replacement = MarioLM().sample(
+        replacement = self.mario_lm.sample(
             prompts=PROMPTS[generator_path],
             num_steps=142,
             temperature=2.2,
             use_tqdm=False
         )[0]
-        print("b")
 
         level[y_range[0]:y_range[1], x_range[0]:x_range[1]] = convert_format(replacement.level)
 
@@ -52,7 +50,8 @@ class MarioGPT(Patcher):
 
 
 def convert_format(level: list[str]) -> np.ndarray:
-    convert = []
+    convert = ["-" * 10, "-" * 10]
+
     for line in level:
         convert.append(
             line.replace("x", "-").replace("[", "t").replace("]", "t").replace("<", "t").replace(">", "t")
