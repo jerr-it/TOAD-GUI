@@ -2,14 +2,20 @@ from __future__ import annotations
 
 import numpy as np
 
-from patching.metrics.tpkl import tpkl
 from patching.patcher import Patcher
 
-GENERATIONS = 10
-POPULATION_SIZE = 10
+GENERATIONS = 1000
+POPULATION_SIZE = 100
 
 
 class EvolutionaryPatterns(Patcher):
+    """
+    Uses an evolutionary algorithm to evolve a replacement section for the broken one.
+    A population has <level_height> specimen (slices), which are the width of the broken section + 2 (+1 for each side).
+    These slices are extracted from the original level.
+    The fitness function is the similarity function as used for the best fit stitching.
+    """
+
     def patch(
             self,
             original_level: list[str],
@@ -17,11 +23,11 @@ class EvolutionaryPatterns(Patcher):
             broken_range: tuple[tuple[int, int], tuple[int, int]],  # (x_range, y_range)
             generator_path: str = ""
     ) -> list[str]:
-        x_range, y_range = broken_range
-        population = Population(level, x_range[1] - x_range[0], original_level, broken_range)
+        population = Population(level, original_level, broken_range)
 
         for _ in range(GENERATIONS):
             population.step()
+            print(population.evaluate(population.population[0]))
 
         best = population.best_specimen()
         return [''.join(row) for row in best]
@@ -31,38 +37,33 @@ class Population:
     def __init__(
             self,
             level: list[str],
-            width: int,
             original_level: list[str],
             broken_range: tuple[tuple[int, int], tuple[int, int]]
     ):
-        self.width = width
-
         self.level = np.array([list(row) for row in level])
         self.generated_level = np.array([list(row) for row in level])
         self.original_level = np.array([list(row) for row in original_level])
         self.broken_range = broken_range
+        x_range, y_range = broken_range
+        self.slice_width = (x_range[1] - x_range[0]) + 2
 
-        self.base_tpkl = tpkl(self.original_level, self.generated_level)
-
-        self.slice_set = []
-
-        # Extract all vertical slices from np_level
-        for x in range(self.level.shape[1]):
-            self.slice_set.append(self.level[:, x])
-
-        # Create a population of specimens
         self.population = []
         for _ in range(POPULATION_SIZE):
-            # Pick a random set of slices, returns indices
-            rng_slices = np.random.choice(len(self.slice_set), size=self.width)
-            # Convert indices to the actual slices
-            slices = [self.slice_set[i] for i in rng_slices]
+            slices = []
+            for row in range(self.original_level.shape[0]):
+                slices.append(self.rng_slice())
 
             self.population.append(Specimen(slices))
 
+    def rng_slice(self) -> np.ndarray:
+        x = np.random.randint(0, self.original_level.shape[1] - self.slice_width)
+        y = np.random.randint(0, self.original_level.shape[0])
+
+        return self.original_level[y:y+1, x:x+self.slice_width].flatten()
+
     def step(self):
-        # Sort the population by fitness (ascending), lower is better
-        self.population.sort(key=self.evaluate)
+        # Sort the population by fitness (descending), higher is better
+        self.population.sort(key=self.evaluate, reverse=True)
 
         # Replace the bottom 50% of the population with offspring
         for i in range(len(self.population) // 2):
@@ -79,22 +80,29 @@ class Population:
 
         # Mutate all specimens
         for specimen in self.population:
-            specimen.mutate(self.slice_set)
+            if np.random.rand() < 0.1:
+                specimen.mutate(self.rng_slice())
 
     def evaluate(self, specimen: Specimen) -> float:
-        # Replace the slices in the generated level with the slices from the specimen
-        for x in range(self.broken_range[0][0], self.broken_range[0][1]):
-            self.level[:, x] = specimen.slice_set[x - self.broken_range[0][0]]
+        x_range, y_range = self.broken_range
 
-        # Calculate the fitness of the specimen
-        return self.base_tpkl - tpkl(self.original_level, self.level)
+        score = 0.0
+        for i, lslice in enumerate(specimen.slice_set):
+            if lslice[0] == self.original_level[i][x_range[0]-1]:
+                score += 1.0
+            if lslice[lslice.shape[0]-1] == self.original_level[i][x_range[1]+1]:
+                score += 1.0
+
+        return score
 
     def best_specimen(self) -> np.ndarray:
-        # Find the best specimen in the population
         best: Specimen = self.population[0]
-        # Insert specimen into level
-        for x in range(self.broken_range[0][0], self.broken_range[0][1]):
-            self.level[:, x] = best.slice_set[x - self.broken_range[0][0]]
+
+        x_range, y_range = self.broken_range
+
+        for row in range(y_range[1]):
+            lslice = best.slice_set[row]
+            self.level[row, x_range[0]:x_range[1]] = lslice[1:lslice.shape[0]-1]
 
         return self.level
 
@@ -103,16 +111,14 @@ class Specimen:
     def __init__(self, slice_set: list[np.ndarray]):
         self.slice_set = slice_set.copy()
 
-    def mutate(self, slice_set: list[np.ndarray]):
-        # Randomly select a slice from self.slice_set and replace it with a random slice from slice_set
-        # TODO replace, random.choice returns indices, not slices
-        rng_slice = np.random.choice(len(slice_set))
-        self.slice_set[np.random.randint(len(self.slice_set))] = slice_set[rng_slice]
+    def mutate(self, random_slice: np.ndarray):
+        self.slice_set[np.random.randint(len(self.slice_set))] = random_slice
 
     def crossover(self, other: Specimen) -> (Specimen, Specimen):
         # Perform one-point crossover and create two new specimens
         # Randomly select a point in the slice_set
-        point = np.random.randint(len(self.slice_set))
+        # point = np.random.randint(len(self.slice_set))
+        point = len(self.slice_set) // 2
 
         # Create two new specimens by swapping the slices after the point
         new_specimen_1 = Specimen(self.slice_set)
