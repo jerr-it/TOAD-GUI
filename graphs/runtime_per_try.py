@@ -8,7 +8,7 @@ metrics_df = load_metrics_df()
 for i, patcher in enumerate(PATCHER_NAMES):
     patcher_df = metrics_df[metrics_df["patcher"].str.contains(patcher)]
     patcher_df["Runtime"] = patcher_df["Runtime"] / patcher_df["Tries"]
-    patcher_df["Runtime"].hist(bins=50, ax=plt.subplot(2, 4, i + 1), range=(0, 50))
+    patcher_df["Runtime"].hist(bins=50, ax=plt.subplot(2, 5, i + 1), range=(0, 50))
     plt.xlabel("Runtime (s)")
     plt.ylabel("Frequency")
     plt.title(f"Runtime per try ({patcher})")
@@ -23,7 +23,7 @@ for i, patcher in enumerate(PATCHER_NAMES):
     mean = patcher_df["Runtime"].mean()
     median = patcher_df["Runtime"].median()
 
-    plt.subplot(2, 4, i + 5)
+    plt.subplot(2, 5, i + 6)
     plt.bar(["Mean", "Median"], [mean, median])
     plt.annotate(f"{mean:.2f}", (0, mean), ha="center", va="bottom")
     plt.annotate(f"{median:.2f}", (1, median), ha="center", va="bottom")

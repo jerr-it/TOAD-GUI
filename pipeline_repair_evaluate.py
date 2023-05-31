@@ -13,7 +13,7 @@ from utils.level_utils import place_a_mario_token
 from utils.mario_ai import MarioAI, AgentType
 from utils.token_defs import MARIO_PATH_TOKEN
 
-REPAIR_STAGE_THREADS = 12
+REPAIR_STAGE_THREADS = 16
 
 
 def list_generators() -> list[str]:

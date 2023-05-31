@@ -2,7 +2,7 @@ import pandas as pd
 
 METRICS_DF_PATH = "../data/metrics.csv"
 
-PATCHER_NAMES = ["Wave Function Collapse", "Evolutionary Patterns", "Stitching", "Best fit stitching"]
+PATCHER_NAMES = ["Wave Function Collapse", "Evolutionary Patterns", "Stitching", "Best fit stitching", "Online"]
 
 GENERATOR_NAMES = [
     "1-1", "1-2", "1-3", "2-1",

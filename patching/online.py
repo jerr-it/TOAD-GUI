@@ -7,9 +7,9 @@ from patching.patcher import Patcher
 
 
 class GameStatus(Enum):
-    RUNNING = 0,
-    WIN = 1,
-    LOSE = 2,
+    RUNNING = 0
+    WIN = 1
+    LOSE = 2
     TIME_OUT = 3
 
 
@@ -29,13 +29,15 @@ class Online(Patcher):
             mario_result: py4j.java_gateway.JavaObject = None,
     ) -> list[str]:
         level = np.array([list(row) for row in level])
+        width = len(level[0])
+        height = len(level)
 
         mario_status = mario_result.getMarioStatus()
         status = mario_status.getStatus()
         if status == GameStatus.LOSE.value:
             # place an X token where mario died
-            x = min(mario_status.getX(), len(level[0]))
-            y = min(mario_status.getY(), len(level))
+            x = min(mario_status.getX(), width-1)
+            y = min(mario_status.getY(), height-1)
             level[y][x] = "X"
 
         elif status == GameStatus.TIME_OUT.value:
@@ -47,7 +49,7 @@ class Online(Patcher):
             x = mario_status.getX()
             y = mario_status.getY()
             for xp in range(x+1, x+6):
-                level[y][xp] = "-"
-                level[y+1][xp] = "X"
+                level[min(height-1, y)][min(width-1, xp)] = "-"
+                level[min(height-1, y+1)][min(width-1, xp)] = "X"
 
         return ["".join(row) for row in level]

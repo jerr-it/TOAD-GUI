@@ -7,7 +7,7 @@ from patching.wfc import WFCPatcher
 
 patchers = {
     # "MarioGPT": MarioGPT(),
-    # "Online": Online(),
+    "Online": Online(),
     "Stitching": Stitching(),
     "Best fit stitching": BestFitStitching(),
     "Evolutionary Patterns": EvolutionaryPatterns(),

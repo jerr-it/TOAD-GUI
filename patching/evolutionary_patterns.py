@@ -5,7 +5,7 @@ import py4j.java_gateway
 
 from patching.patcher import Patcher
 
-GENERATIONS = 1000
+GENERATIONS = 500
 POPULATION_SIZE = 100
 
 
@@ -29,7 +29,6 @@ class EvolutionaryPatterns(Patcher):
 
         for _ in range(GENERATIONS):
             population.step()
-            print(population.evaluate(population.population[0]))
 
         best = population.best_specimen()
         return [''.join(row) for row in best]
@@ -90,9 +89,9 @@ class Population:
 
         score = 0.0
         for i, lslice in enumerate(specimen.slice_set):
-            if lslice[0] == self.original_level[i][x_range[0]-1]:
+            if lslice[0] == self.generated_level[i][x_range[0]-1]:
                 score += 1.0
-            if lslice[lslice.shape[0]-1] == self.original_level[i][x_range[1]+1]:
+            if lslice[lslice.shape[0]-1] == self.generated_level[i][x_range[1]+1]:
                 score += 1.0
 
         return score
