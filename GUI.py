@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog as fd
 from PIL import ImageTk, Image, ImageDraw
-from py4j.java_gateway import JavaGateway
+
 import os
 import platform
 import time
@@ -268,7 +268,7 @@ def TOAD_GUI():
             error_msg.set("Level generated!")
         return
 
-    def redraw_image(edit_mode=False, rectangle=[(0, 0), (16, 16)], scale=0, broken_rectangles: list = []):
+    def redraw_image(edit_mode=False, rectangle=[(0, 0), (16, 16)], scale=0, broken_rectangles: list = [], path: list[tuple[int, int]] = []):
         if is_loaded.get():
             # Check if a Mario token exists - if not, we need to place one
             m_exists = False
@@ -291,6 +291,8 @@ def TOAD_GUI():
                     (x_range[1] * 16, y_range[1] * 16)
                 ]
                 l_draw.rectangle(scaled_rect, outline=(255, 0, 0), width=4)
+
+            l_draw.line(path, fill=(0, 255, 0), width=3)
 
             if edit_mode:
                 # Add numbers to rows and cols
@@ -422,7 +424,6 @@ def TOAD_GUI():
 
                     level_obj.ascii_level = [line + "\n" for line in level]
                     level_obj.ascii_level[-1] = level_obj.ascii_level[-1].rstrip()
-                    level_obj.oh_level = ascii_to_one_hot_level(level_obj.ascii_level, level_obj.tokens)
                     redraw_image(broken_rectangles=broken_spots)
                 except Exception as e:
                     print(f"Patcher caused exception: {e}", file=sys.stderr)
@@ -434,8 +435,11 @@ def TOAD_GUI():
 
             level_obj.ascii_level = [line + "\n" for line in level]
             level_obj.ascii_level[-1] = level_obj.ascii_level[-1].rstrip()
-            level_obj.oh_level = ascii_to_one_hot_level(level_obj.ascii_level, level_obj.tokens)
-            redraw_image(broken_rectangles=broken_spots)
+
+            path = result.getMarioPath()
+            path = [(position.getX(), position.getY() - 8) for position in path]
+
+            redraw_image(broken_rectangles=broken_spots, path=path)
             error_msg.set(
                 f"Fixed level using {dropdown_value.get()} in {tries} attempts" if tries > 0 else "Level is playable")
 

@@ -2,6 +2,7 @@ import concurrent.futures
 import os
 import sys
 import time
+import traceback
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,7 @@ from utils.level_utils import place_a_mario_token
 from utils.mario_ai import MarioAI, AgentType
 from utils.token_defs import MARIO_PATH_TOKEN
 
-REPAIR_STAGE_THREADS = 16
+REPAIR_STAGE_THREADS = 12
 
 
 def list_generators() -> list[str]:
@@ -137,11 +138,15 @@ def check_mario_token(level: list[str]) -> list[str]:
 def mark_path(level: list[str], result: py4j.java_gateway.JavaObject) -> list[str]:
     nplevel = np.array([list(row) for row in level])
     height = len(level)
+    width = len(level[0])
 
     path = result.getMarioPath()
     for position in path:
-        x = position.getX()
-        y = position.getY()
+        x = int(position.getX() * 16.0)
+        y = int(position.getY() * 16.0)
+
+        if x < 0 or x >= width:
+            continue
 
         if y >= height:
             continue
@@ -231,7 +236,7 @@ def repair_level(
                 fixed_level = mark_path(fixed_level, mario_result)
                 level_dict[patcher_name] = fixed_level
     except Exception as e:
-        print(f"Fixing process ended unexpectedly: {e}", file=sys.stderr)
+        print(f"Fixing process ended unexpectedly: {traceback.format_exc()}", file=sys.stderr)
 
     return level_path, pd.DataFrame(metrics_data), level_dict
 

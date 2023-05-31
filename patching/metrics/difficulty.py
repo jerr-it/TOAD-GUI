@@ -112,8 +112,11 @@ def rolling_difficulty(level: list[str], mario_result: py4j.java_gateway.JavaObj
     path: list[int] = [0] * width
 
     for position in m_path:
-        x: int = position.getX()
-        y: int = position.getY()
+        x: int = int(position.getX() * 16.0)
+        y: int = int(position.getY() * 16.0)
+
+        if x < 0 or x >= nplevel.shape[0]:
+            continue
 
         if y >= nplevel.shape[1]:
             continue
