@@ -399,7 +399,8 @@ def TOAD_GUI():
 
         broken_spots = []
         with MarioAI() as mario:
-            progress = mario.evaluate_level(level, AgentType.AstarDynamicPlanning, False, 4000, 30).getCompletionPercentage()
+            result = mario.evaluate_level(level, AgentType.AstarDynamicPlanning, False, 4000, 30)
+            progress = result.getCompletionPercentage()
 
             tries = 0
             while progress < 0.99:
@@ -410,10 +411,13 @@ def TOAD_GUI():
                     level = patching.patchers[dropdown_value.get()].patch(
                         orig_level,
                         level,
-                        b_range
+                        b_range,
+                        generator_name,
+                        result,
                     )
 
-                    progress = mario.evaluate_level(level, AgentType.AstarDynamicPlanning, False, 4000, 30).getCompletionPercentage()
+                    result = mario.evaluate_level(level, AgentType.AstarDynamicPlanning, False, 4000, 30)
+                    progress = result.getCompletionPercentage()
                     tries += 1
 
                     level_obj.ascii_level = [line + "\n" for line in level]
