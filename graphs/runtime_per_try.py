@@ -32,8 +32,9 @@ for i, patcher in enumerate(PATCHER_NAMES):
     plt.title(f"Runtime per try ({patcher})")
 
 plt.subplots_adjust(hspace=0.5)
-plt.subplots_adjust(top=0.95, bottom=0.1)
+plt.subplots_adjust(top=0.9, bottom=0.1)
 plt.gcf().set_size_inches(20, 10)
+plt.suptitle("Runtime", fontsize=16)
 
 plt.savefig("../data/runtime_per_try.png")
 plt.show()

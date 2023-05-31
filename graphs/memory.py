@@ -22,7 +22,7 @@ for i, patcher in enumerate(PATCHER_NAMES):
     mean = patcher_df["Peak memory"].mean()
     median = patcher_df["Peak memory"].median()
 
-    plt.subplot(2, 5, i + 5)
+    plt.subplot(2, 5, i + 6)
     plt.bar(["Mean", "Median"], [mean, median])
     plt.annotate(f"{mean:.2f}", (0, mean), ha="center", va="bottom")
     plt.annotate(f"{median:.2f}", (1, median), ha="center", va="bottom")
@@ -35,4 +35,5 @@ plt.subplots_adjust(top=0.9, bottom=0.1)
 plt.gcf().set_size_inches(20, 10)
 plt.suptitle("Peak memory (tracemalloc)", fontsize=16)
 
+plt.savefig("../data/peak_memory.png")
 plt.show()
