@@ -34,10 +34,14 @@ class Online(Patcher):
 
         mario_status = mario_result.getMarioStatus()
         status = mario_status.getStatus()
+
+        x = round(mario_status.getX() / 16.0)
+        y = round((mario_status.getY() - 8.0) / 16.0)
+
         if status == GameStatus.LOSE.value:
             # place an X token where mario died
-            x = min(mario_status.getX(), width-1)
-            y = min(mario_status.getY(), height-1)
+            x = min(x, width-1)
+            y = min(y, height-1)
             level[y][x] = "X"
 
         elif status == GameStatus.TIME_OUT.value:
@@ -46,8 +50,6 @@ class Online(Patcher):
             # --XXX      --XXX
             # --XXX  ->  -----
             # XX--X      XXXXX
-            x = mario_status.getX()
-            y = mario_status.getY()
             for xp in range(x+1, x+6):
                 level[min(height-1, y)][min(width-1, xp)] = "-"
                 level[min(height-1, y+1)][min(width-1, xp)] = "X"

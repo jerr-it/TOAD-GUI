@@ -213,6 +213,7 @@ def repair_level(
                         current_progress = mario_result.getCompletionPercentage()
                     except Exception as e:
                         print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=sys.stderr)
+                        print(f"Traceback: {traceback.format_exc()}")
 
                     for metric in metrics:
                         metric.iter_hook(mario_result, fixed_level)
