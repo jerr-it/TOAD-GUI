@@ -1,6 +1,5 @@
 import concurrent.futures
 import os
-import sys
 import time
 import traceback
 
@@ -76,7 +75,6 @@ def already_done(level_path: str, metrics_df: pd.DataFrame) -> bool:
     """
     Returns true if we already ran the given patcher on the given level
     :param level_path: path to the level
-    :param patcher: patcher to apply
     :param metrics_df: df containing already completed runs
     :return: True if the patcher was already run on that level
     """
@@ -159,19 +157,21 @@ def mark_path(level: list[str], result: py4j.java_gateway.JavaObject) -> list[st
 def repair_level(
         level_path: str,
         generator_path: str,
+        process_timestamp: str,
 ) -> (str, pd.DataFrame, dict[str, list[str]]):
     """
     Repairs a given broken level using all available repair mechanisms and
     evaluates their performance with the given metrics
     :param level_path: Path to the level thats to be repaired
     :param generator_path: Path to the generator the level was created from
-    :param metrics_df: Existing metrics data, to avoid repairing a level twice
     :return: (
         level path
         Dataframe containing metrics evaluated on the different patchers,
         dict of levels fixed (one per patcher)
     )
     """
+    out = open(f"./stdout/{process_timestamp}/{str(os.getpid())}.out", "a")
+
     try:
         generated_level, progress = parse_broken_level(level_path)
         level_width: int = len(generated_level[0])
@@ -183,7 +183,7 @@ def repair_level(
             level_dict = {}
 
             for patcher_name, patcher in patchers.items():
-                print(f"Applying {patcher_name} to {level_path}")
+                print(f"Applying {patcher_name} to {level_path}", file=out, flush=True)
                 metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
 
                 original_result = mario.evaluate_level(original_level.copy(), AgentType.AstarDynamicPlanning, False, 4000, 30)
@@ -212,8 +212,8 @@ def repair_level(
                         mario_result = mario.evaluate_level(fixed_level, AgentType.AstarDynamicPlanning, False, 4000, 30)
                         current_progress = mario_result.getCompletionPercentage()
                     except Exception as e:
-                        print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=sys.stderr)
-                        print(f"Traceback: {traceback.format_exc()}")
+                        print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=out)
+                        print(f"Traceback: {traceback.format_exc()}", file=out, flush=True)
 
                     for metric in metrics:
                         metric.iter_hook(mario_result, fixed_level)
@@ -232,7 +232,8 @@ def repair_level(
                 fixed_level = mark_path(fixed_level, mario_result)
                 level_dict[patcher_name] = fixed_level
     except Exception as e:
-        print(f"Fixing process ended unexpectedly: {traceback.format_exc()}", file=sys.stderr)
+        print(f"Fixing process ended unexpectedly: {e}", file=out)
+        print(f"Traceback: {traceback.format_exc()}", file=out, flush=True)
 
     return level_path, pd.DataFrame(metrics_data), level_dict
 
@@ -267,6 +268,10 @@ def calculate_eta(times: list[float], remaining: int) -> str:
 
 
 def pipeline_repair_evaluate():
+    process_timestamp = time.strftime("%Y_%m_%d_%H_%M", time.gmtime(time.time()))
+    if not os.path.isdir(f"./stdout/{process_timestamp}"):
+        os.mkdir(f"./stdout/{process_timestamp}")
+
     metrics_df = read_or_create_metrics_csv()
 
     generators = list_generators()
@@ -289,7 +294,7 @@ def pipeline_repair_evaluate():
     times = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
         futures = [
-            executor.submit(repair_level, level_path, generator_path)
+            executor.submit(repair_level, level_path, generator_path, process_timestamp)
             for level_path, generator_path in level_list
         ]
 

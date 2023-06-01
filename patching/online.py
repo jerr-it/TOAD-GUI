@@ -40,9 +40,11 @@ class Online(Patcher):
 
         if status == GameStatus.LOSE.value:
             # place an X token where mario died
-            x = min(x, width-1)
+            x = min(x, width-2)
             y = min(y, height-1)
             level[y][x] = "X"
+            level[y][x-1] = "X"
+            level[y][x+1] = "X"
 
         elif status == GameStatus.TIME_OUT.value:
             # Remove the section ahead of mario with something guaranteed to be passable
@@ -50,7 +52,7 @@ class Online(Patcher):
             # --XXX      --XXX
             # --XXX  ->  -----
             # XX--X      XXXXX
-            for xp in range(x+1, x+6):
+            for xp in range(x, x+6):
                 level[min(height-1, y)][min(width-1, xp)] = "-"
                 level[min(height-1, y+1)][min(width-1, xp)] = "X"
 
