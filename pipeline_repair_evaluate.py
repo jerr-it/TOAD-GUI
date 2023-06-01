@@ -72,7 +72,7 @@ def parse_broken_level(level_path: str) -> (list[str], float):
     return level, progress
 
 
-def already_done(level_path: str, patcher: str, metrics_df: pd.DataFrame) -> bool:
+def already_done(level_path: str, metrics_df: pd.DataFrame) -> bool:
     """
     Returns true if we already ran the given patcher on the given level
     :param level_path: path to the level
@@ -83,7 +83,7 @@ def already_done(level_path: str, patcher: str, metrics_df: pd.DataFrame) -> boo
     if metrics_df.empty:
         return False
 
-    return ((metrics_df["level"] == level_path) & (metrics_df["patcher"] == patcher)).any()
+    return (metrics_df["level"] == level_path).any()
 
 
 def load_original_level(generator_path: str) -> list[str]:
@@ -159,7 +159,6 @@ def mark_path(level: list[str], result: py4j.java_gateway.JavaObject) -> list[st
 def repair_level(
         level_path: str,
         generator_path: str,
-        metrics_df: pd.DataFrame
 ) -> (str, pd.DataFrame, dict[str, list[str]]):
     """
     Repairs a given broken level using all available repair mechanisms and
@@ -184,10 +183,6 @@ def repair_level(
             level_dict = {}
 
             for patcher_name, patcher in patchers.items():
-                if already_done(level_path, patcher_name, metrics_df):
-                    print(f"Skipping {patcher_name} for {level_path}")
-                    continue
-
                 print(f"Applying {patcher_name} to {level_path}")
                 metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
 
@@ -277,24 +272,23 @@ def pipeline_repair_evaluate():
 
     level_list = []
 
-    print("Gathering levels...")
     for idx, generator_name in enumerate(generators):
         generator_path: str = os.path.join(os.path.curdir, "data", generator_name)
 
         level_files: list[str] = list_levels(generator_path)
 
         for level_file in level_files:
-            level_list.append((level_file, generator_path))
+            if not already_done(level_file, metrics_df):
+                level_list.append((level_file, generator_path))
 
     level_idx = 1
     level_count = len(level_list)
 
-    print("Starting repair process...")
     start_counter = time.time()
     times = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
         futures = [
-            executor.submit(repair_level, level_path, generator_path, metrics_df)
+            executor.submit(repair_level, level_path, generator_path)
             for level_path, generator_path in level_list
         ]
 

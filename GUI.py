@@ -1,3 +1,4 @@
+import re
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog as fd
@@ -389,8 +390,9 @@ def TOAD_GUI():
         patcher_dropdown.state(['disabled'])
 
         nonlocal generator_name
+
         orig_level = load_original_level(
-            generator_name.split("_")[-1] if generator_name != "" else load_string_gen.get().split("_")[-1].removesuffix(".txt"))
+            generator_name.split("_")[-1] if generator_name != "" else re.findall(r"\d{1}-\d{1}", load_string_gen.get())[0])
 
         level = []
         for line in level_obj.ascii_level:
