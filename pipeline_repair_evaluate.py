@@ -140,8 +140,8 @@ def mark_path(level: list[str], result: py4j.java_gateway.JavaObject) -> list[st
 
     path = result.getMarioPath()
     for position in path:
-        x = int(position.getX() * 16.0)
-        y = int(position.getY() * 16.0)
+        x = int(position.getX() / 16.0)
+        y = int((position.getY() - 8.0) / 16.0)
 
         if x < 0 or x >= width:
             continue
