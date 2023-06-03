@@ -11,7 +11,7 @@ from patching import patchers
 from patching.metrics import metrics
 from utils.level_utils import place_a_mario_token
 from utils.mario_ai import MarioAI, AgentType
-from utils.token_defs import MARIO_PATH_TOKEN
+from utils.token_defs import MARIO_PATH_TOKEN, MARIO_TOKEN, FINISH_TOKEN
 
 REPAIR_STAGE_THREADS = 12
 
@@ -133,6 +133,23 @@ def check_mario_token(level: list[str]) -> list[str]:
     return level
 
 
+def remove_start_finish(level: list[str], section: tuple[tuple[int, int], tuple[int, int]]) -> list[str]:
+    """
+    Checks if there is a Mario or finish token in the given section and replaces it with air
+    :param level:
+    :param section:
+    :return:
+    """
+    x_range, y_range = section
+
+    for row in range(y_range[0], y_range[1]):
+        for column in range(x_range[0], x_range[1]):
+            if level[row][column] in [MARIO_TOKEN, FINISH_TOKEN]:
+                level[row] = level[row][:column] + "-" + level[row][column+1:]
+
+    return level
+
+
 def mark_path(level: list[str], result: py4j.java_gateway.JavaObject) -> list[str]:
     nplevel = np.array([list(row) for row in level])
     height = len(level)
@@ -172,17 +189,18 @@ def repair_level(
     """
     out = open(f"./stdout/{process_timestamp}/{str(os.getpid())}.out", "a")
 
+    metrics_data = []
+    level_dict = {}
+
     try:
         generated_level, progress = parse_broken_level(level_path)
         level_width: int = len(generated_level[0])
         level_height: int = len(generated_level)
 
         original_level = load_original_level(generator_path)
-        with MarioAI() as mario:
-            metrics_data = []
-            level_dict = {}
 
-            for patcher_name, patcher in patchers.items():
+        for patcher_name, patcher in patchers.items():
+            with MarioAI() as mario:
                 print(f"Applying {patcher_name} to {level_path}", file=out, flush=True)
                 metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
 
@@ -208,6 +226,8 @@ def repair_level(
                         fixed_level = check_mario_token(
                             patcher.patch(original_level, fixed_level, broken_range, generator_path, mario_result)
                         )
+
+                        fixed_level = remove_start_finish(fixed_level, broken_range)
 
                         mario_result = mario.evaluate_level(fixed_level, AgentType.AstarDynamicPlanning, False, 4000, 30)
                         current_progress = mario_result.getCompletionPercentage()
