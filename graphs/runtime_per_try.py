@@ -20,6 +20,8 @@ ax.title.set_size(20)
 # Make sure the heatmap is square
 ax.set_aspect("equal")
 
-sns.heatmap(runtime_per_try_df, annot=True, fmt=".2f", linewidths=.5, ax=ax)
+plot = sns.heatmap(runtime_per_try_df, annot=True, fmt=".2f", linewidths=.5, ax=ax)
+plot.set_xlabel("Generator")
+plot.set_ylabel("Patcher")
 
 plt.show()
