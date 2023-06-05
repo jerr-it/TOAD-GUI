@@ -12,6 +12,25 @@ GENERATOR_NAMES = [
 ]
 
 
+LEVEL_TYPES = {
+    "1-1": "Overworld",
+    "1-2": "Cave",
+    "1-3": "Platforms",
+    "2-1": "Overworld",
+    "3-1": "Overworld",
+    "3-3": "Platforms",
+    "4-1": "Overworld",
+    "4-2": "Cave",
+    "5-1": "Overworld",
+    "5-3": "Platforms",
+    "6-1": "Overworld",
+    "6-2": "Overworld",
+    "6-3": "Platforms",
+    "7-1": "Overworld",
+    "8-1": "Overworld",
+}
+
+
 def load_metrics_df() -> pd.DataFrame:
     return pd.read_csv(METRICS_DF_PATH)
 
@@ -22,7 +41,7 @@ def add_generator_column(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_level_type_column(df: pd.DataFrame) -> pd.DataFrame:
-    df["level_type"] = df["generator"].str[-1]
+    df["level_type"] = df["generator"].apply(lambda x: LEVEL_TYPES[x])
     return df
 
 
