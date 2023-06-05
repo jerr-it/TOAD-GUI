@@ -2,11 +2,12 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-from graphs import load_metrics_df
+from graphs import load_metrics_df, add_generator_column
 
 sns.set_theme()
 metrics_df: pd.DataFrame = load_metrics_df()
 
+metrics_df = add_generator_column(metrics_df)
 metrics_df["runtime_per_try"] = metrics_df["Runtime"] / metrics_df["Tries"]
 runtime_per_try_df = metrics_df[["generator", "patcher", "runtime_per_try"]].copy()
 runtime_per_try_df = runtime_per_try_df.groupby(["generator", "patcher"]).mean().reset_index()
