@@ -12,6 +12,7 @@ class PatternScanner:
 
     def __init__(self, grid: np.ndarray, kernel_size: int):
         self.pattern_distribution: dict[Pattern, int] = {}
+        self.pattern_distribution_list: list[tuple[Pattern, int]] = []
         self.total_weight: int = 0
 
         self.rows: int = grid.shape[0]
@@ -38,16 +39,24 @@ class PatternScanner:
 
         # Generate adjacency lists.
         for pattern in self.pattern_distribution:
-            for other_pattern in self.pattern_distribution:
+            for idx, other_pattern in enumerate(self.pattern_distribution):
                 for direction in Direction:
                     if pattern.overlaps(other_pattern, direction):
-                        pattern.add_adjacency(direction, other_pattern)
+                        pattern.add_adjacency(direction, idx)
 
-    def get_full_pattern_set(self) -> set[Pattern]:
-        return set(self.pattern_distribution.keys())
+        self.pattern_distribution_list = list(self.pattern_distribution.items())
 
-    def get_pattern_weight(self, pattern: Pattern) -> int:
-        return self.pattern_distribution[pattern]
+    def get_full_pattern_set(self) -> set[int]:
+        return set([i for i in range(len(self.pattern_distribution_list))])
+
+    def get_pattern_index(self, p: Pattern) -> int:
+        for idx, (pattern, weight) in enumerate(self.pattern_distribution_list):
+            if pattern == p:
+                return idx
+        raise LookupError
+
+    def get_pattern_entry(self, index: int) -> tuple[Pattern, int]:
+        return self.pattern_distribution_list[index]
 
     def on_completion(self, grid: np.ndarray):
         raise NotImplementedError

@@ -49,12 +49,12 @@ class WFC:
     @staticmethod
     def find_partly_matching_pattern(pattern: np.ndarray, scanner: PatternScanner) -> WaveFunction | None:
         pattern = Pattern(pattern)
-        p_set = scanner.get_full_pattern_set()
+        p_set = scanner.pattern_distribution.keys()
         for p in p_set:
             # Check every element in the pattern, defaulting to true if the element is a space
             # If all elements are true, return a new wave function with the pattern as its only possibility
             if pattern.equals_ignore(p, "€"):
-                return WaveFunction(p)
+                return WaveFunction(scanner.get_pattern_index(p))
         return None
 
     def find_random_least_entropy_wave(self) -> tuple[int, int]:
@@ -122,5 +122,5 @@ class WFC:
             cell = self.find_random_least_entropy_wave()
 
         self.pattern_scanner.on_completion(
-            np.array([[list(wave.patterns)[0].center_value() for wave in row] for row in self.grid])
+            np.array([[self.pattern_scanner.get_pattern_entry(list(wave.patterns)[0])[0].center_value() for wave in row] for row in self.grid])
         )

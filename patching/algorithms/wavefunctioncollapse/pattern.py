@@ -22,16 +22,17 @@ class Pattern:
 
     def __init__(self, data):
         self.data: np.ndarray = np.array(data)
+        self.data_hash = self.__hash__()
         self.rows: int = self.data.shape[0]
         self.columns: int = self.data.shape[1]
 
-        self.adjacencies: dict[Direction, set[Pattern]] = {}
+        self.adjacencies: dict[Direction, set[int]] = {}
 
     def __hash__(self) -> int:
         return hash(self.data.tobytes())
 
     def __eq__(self, other: Pattern) -> bool:
-        return np.array_equal(self.data, other.data)
+        return self.data_hash == other.data_hash
 
     def equals_ignore(self, other: Pattern, symbol) -> bool:
         """
@@ -59,14 +60,14 @@ class Pattern:
         """
         return self.data[self.rows // 2, self.columns // 2]
 
-    def add_adjacency(self, direction: Direction, pattern: Pattern):
+    def add_adjacency(self, direction: Direction, pattern_idx: int):
         """
         Adds a pattern to the adjacency list of the current pattern.
         """
         if direction not in self.adjacencies:
             self.adjacencies[direction] = set()
 
-        self.adjacencies[direction].add(pattern)
+        self.adjacencies[direction].add(pattern_idx)
 
     def overlaps(self, other: Pattern, direction: Direction) -> bool:
         """
