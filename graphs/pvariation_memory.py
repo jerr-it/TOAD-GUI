@@ -15,6 +15,7 @@ plot = sns.lmplot(
     x="Pattern variation generated",
     y="Peak memory",
     hue="patcher",
+    fit_reg=False
 )
 plot.set_axis_labels("Pattern variation []", "Peak memory [kB]")
 

@@ -4,7 +4,7 @@ import seaborn as sns
 
 from graphs import load_metrics_df, add_level_type_column, add_generator_column
 
-PATCHER = "Wave Function Collapse"
+PATCHER = "Online"
 
 with sns.color_palette("Paired"):
     metrics_df: pd.DataFrame = load_metrics_df()
