@@ -16,10 +16,8 @@ metrics_df["variation_change"] = (metrics_df["Pattern variation fixed"] - metric
 metrics_df["difficulty_change"] = (metrics_df["Difficulty fixed"] - metrics_df["Difficulty generated"]).abs()
 metrics_df["Tries"] = metrics_df["Tries"]
 
-df = metrics_df[["patcher", "Runtime", "Peak memory", "tpkl_change", "variation_change", "difficulty_change", "Tries"]].copy()
-
 y = metrics_df[["patcher"]].copy()
-X = metrics_df[["Runtime", "Peak memory", "tpkl_change", "variation_change", "difficulty_change", "Tries"]].copy()
+X = metrics_df[["tpkl_change", "variation_change", "difficulty_change"]].copy()
 
 x_scaled = StandardScaler().fit_transform(X)
 
@@ -27,6 +25,7 @@ pca = PCA(n_components=2)
 
 pca_features = pca.fit_transform(x_scaled)
 
+print(pca.explained_variance_ratio_)
 pca_df = pd.DataFrame(
     data=pca_features,
     columns=["PC1", "PC2"]

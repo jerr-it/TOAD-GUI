@@ -71,7 +71,7 @@ def parse_broken_level(level_path: str) -> (list[str], float):
     return level, progress
 
 
-def already_done(level_path: str, metrics_df: pd.DataFrame) -> bool:
+def already_done(level_path: str, metrics_df: pd.DataFrame, patcher_name: str) -> bool:
     """
     Returns true if we already ran the given patcher on the given level
     :param level_path: path to the level
@@ -81,7 +81,7 @@ def already_done(level_path: str, metrics_df: pd.DataFrame) -> bool:
     if metrics_df.empty:
         return False
 
-    return (metrics_df["level"] == level_path).any()
+    return ((metrics_df["level"] == level_path) & (metrics_df["patcher"] == patcher_name)).any()
 
 
 def load_original_level(generator_path: str) -> list[str]:
@@ -174,6 +174,7 @@ def mark_path(level: list[str], result: py4j.java_gateway.JavaObject) -> list[st
 def repair_level(
         level_path: str,
         generator_path: str,
+        patcher_name: str,
         process_timestamp: str,
 ) -> (str, pd.DataFrame, dict[str, list[str]]):
     """
@@ -199,58 +200,59 @@ def repair_level(
 
         original_level = load_original_level(generator_path)
 
-        for patcher_name, patcher in patchers.items():
-            with MarioAI() as mario:
-                print(f"Applying {patcher_name} to {level_path}", file=out, flush=True)
-                metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
+        patcher = patchers[patcher_name]
 
-                original_result = mario.evaluate_level(original_level.copy(), AgentType.AstarDynamicPlanning, False, 4000, 30)
-                generated_result = mario.evaluate_level(generated_level.copy(), AgentType.AstarDynamicPlanning, False, 4000, 30)
+        with MarioAI() as mario:
+            print(f"Applying {patcher_name} to {level_path}", file=out, flush=True)
+            metrics_data.insert(0, {"level": level_path, "patcher": patcher_name})
+
+            original_result = mario.evaluate_level(original_level.copy(), AgentType.AstarDynamicPlanning, False, 4000, 30)
+            generated_result = mario.evaluate_level(generated_level.copy(), AgentType.AstarDynamicPlanning, False, 4000, 30)
+
+            for metric in metrics:
+                metric.pre_hook(
+                    original_level.copy(),
+                    original_result,
+                    generated_level.copy(),
+                    generated_result
+                )
+
+            fixed_level: list[str] = generated_level.copy()
+            current_progress = progress
+            mario_result = generated_result
+
+            while current_progress < 0.99:
+                broken_range = calculate_broken_range(current_progress, level_width, level_height)
+
+                try:
+                    fixed_level = check_mario_token(
+                        patcher.patch(original_level, fixed_level, broken_range, generator_path, mario_result)
+                    )
+
+                    fixed_level = remove_start_finish(fixed_level, broken_range)
+
+                    mario_result = mario.evaluate_level(fixed_level, AgentType.AstarDynamicPlanning, False, 4000, 30)
+                    current_progress = mario_result.getCompletionPercentage()
+                except Exception as e:
+                    print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=out)
+                    print(f"Traceback: {traceback.format_exc()}", file=out, flush=True)
 
                 for metric in metrics:
-                    metric.pre_hook(
-                        original_level.copy(),
-                        original_result,
-                        generated_level.copy(),
-                        generated_result
-                    )
+                    metric.iter_hook(mario_result, fixed_level)
 
-                fixed_level: list[str] = generated_level.copy()
-                current_progress = progress
-                mario_result = generated_result
+            for metric in reversed(metrics):
+                result = metric.post_hook(
+                    mario_result,
+                    original_level,
+                    generated_level,
+                    fixed_level
+                )
 
-                while current_progress < 0.99:
-                    broken_range = calculate_broken_range(current_progress, level_width, level_height)
+                for metric_name, metric_value in result.items():
+                    metrics_data[0][metric_name] = metric_value
 
-                    try:
-                        fixed_level = check_mario_token(
-                            patcher.patch(original_level, fixed_level, broken_range, generator_path, mario_result)
-                        )
-
-                        fixed_level = remove_start_finish(fixed_level, broken_range)
-
-                        mario_result = mario.evaluate_level(fixed_level, AgentType.AstarDynamicPlanning, False, 4000, 30)
-                        current_progress = mario_result.getCompletionPercentage()
-                    except Exception as e:
-                        print(f"Patcher {patcher_name} on level {level_path} threw exception: {e}", file=out)
-                        print(f"Traceback: {traceback.format_exc()}", file=out, flush=True)
-
-                    for metric in metrics:
-                        metric.iter_hook(mario_result, fixed_level)
-
-                for metric in reversed(metrics):
-                    result = metric.post_hook(
-                        mario_result,
-                        original_level,
-                        generated_level,
-                        fixed_level
-                    )
-
-                    for metric_name, metric_value in result.items():
-                        metrics_data[0][metric_name] = metric_value
-
-                fixed_level = mark_path(fixed_level, mario_result)
-                level_dict[patcher_name] = fixed_level
+            fixed_level = mark_path(fixed_level, mario_result)
+            level_dict[patcher_name] = fixed_level
     except Exception as e:
         print(f"Fixing process ended unexpectedly: {e}", file=out)
         print(f"Traceback: {traceback.format_exc()}", file=out, flush=True)
@@ -304,18 +306,19 @@ def pipeline_repair_evaluate():
         level_files: list[str] = list_levels(generator_path)
 
         for level_file in level_files:
-            if not already_done(level_file, metrics_df):
-                level_list.append((level_file, generator_path))
+            for patcher_name, patcher in patchers.items():
+                if not already_done(level_file, metrics_df, patcher_name):
+                    level_list.append((level_file, generator_path, patcher_name))
 
-    level_idx = 1
+    level_idx = 0
     level_count = len(level_list)
 
     start_counter = time.time()
     times = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=REPAIR_STAGE_THREADS) as executor:
         futures = [
-            executor.submit(repair_level, level_path, generator_path, process_timestamp)
-            for level_path, generator_path in level_list
+            executor.submit(repair_level, level_path, generator_path, patcher_name, process_timestamp)
+            for level_path, generator_path, patcher_name in level_list
         ]
 
         for future in concurrent.futures.as_completed(futures):
