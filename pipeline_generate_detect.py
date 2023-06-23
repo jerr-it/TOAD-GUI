@@ -14,8 +14,15 @@ from utils.level_utils import one_hot_to_ascii_level, place_a_mario_token
 
 LEVEL_WIDTH = 202
 LEVEL_HEIGHT = 16
-LEVELS_PER_GENERATOR = 8
-GENERATE_STAGE_THREADS = 8
+LEVELS_PER_GENERATOR = 100
+GENERATE_STAGE_THREADS = 24
+
+
+DEATH_TYPES = {
+    1: "FALL",
+    2: "KILL",
+    3: "TIMEOUT",
+}
 
 
 def list_generators() -> list[str]:
@@ -71,8 +78,9 @@ def generate_unplayable_level(generator: TOADGAN_obj) -> (list[str], float, int)
 
             result = mario.evaluate_level(ascii_level, AgentType.AstarDynamicPlanning, False, 4000, 30)
             progress = result.getCompletionPercentage()
+            death_type = result.getDeathCause()
 
-    return ascii_level, progress, attempts
+    return ascii_level, progress, attempts, death_type
 
 
 def remove_newlines(level: list[str]) -> list[str]:
@@ -112,6 +120,11 @@ def save_generated_level(level: list[str], progress: float, generator_path: str)
 
 def pipeline_generate():
     generator_attempts = {}
+    death_causes = {
+        "FALL": 0,
+        "KILL": 0,
+        "TIMEOUT": 0,
+    }
     for generator_path in list_generators():
         total_attempts = 0
         with concurrent.futures.ThreadPoolExecutor(max_workers=GENERATE_STAGE_THREADS) as executor:
@@ -125,15 +138,25 @@ def pipeline_generate():
 
             idx = 0
             for future in concurrent.futures.as_completed(futures):
-                level, progress, attempts = future.result()
+                level, progress, attempts, death_type = future.result()
 
                 save_generated_level(level, progress, generator_path)
                 print(f"Saved level {idx} for {generator_path} with {attempts} attempts.")
 
+                death_causes[DEATH_TYPES[death_type]] += 1
+
                 total_attempts += attempts
                 idx += 1
 
+        print(f"Death causes: {death_causes}")
         generator_attempts[generator_path] = total_attempts
+
+    death_causes_path = os.path.join(os.path.curdir, "data", "death_stats.csv")
+    with open(death_causes_path, "w") as f:
+        f.write("death_type, count\n")
+        for key, item in death_causes.items():
+            f.write(f"{key}, {item}\n")
+
 
     # Load attempts from data/attempts.csv or create a new one
     attempts_path = os.path.join(os.path.curdir, "data", "attempts.csv")

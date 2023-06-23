@@ -12,7 +12,7 @@ POPULATION_SIZE = 100
 class EvolutionaryPatterns(Patcher):
     """
     Uses an evolutionary algorithm to evolve a replacement section for the broken one.
-    A population has <level_height> specimen (slices), which are the width of the broken section + 2 (+1 for each side).
+    A specimen has <level_height> horizontal slices, which are the width of the broken section + 2 (+1 for each side).
     These slices are extracted from the original level.
     The fitness function is the similarity function as used for the best fit stitching.
     """
