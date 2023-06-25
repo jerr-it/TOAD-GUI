@@ -35,16 +35,17 @@ class PatternVariation(Metric):
         }
 
 
-def pattern_variation(level: list[str], kernel_size: int = 3) -> float:
+def pattern_variation(level: list[str] | np.ndarray, kernel_size: int = 3) -> float:
     # Convert level to 2d numpy array, splitting the strings into lists of chars
-    level = np.array([list(x) for x in level])
+    if isinstance(level, list):
+        level = np.array([list(x) for x in level])
 
     # Iterate over all kernel_size x kernel_size tiles in the level
     # and count the number of times each pattern appears
     pattern_counts = {}
     for row in range(level.shape[0] - kernel_size + 1):
         for col in range(level.shape[1] - kernel_size + 1):
-            pattern = tuple(level[row:row + kernel_size, col:col + kernel_size].flatten())
+            pattern = level[row:row + kernel_size, col:col + kernel_size].tobytes()
             pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
 
     # Calculate the total number of patterns in the level

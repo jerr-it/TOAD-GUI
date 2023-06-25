@@ -5,11 +5,18 @@ import py4j.java_gateway
 
 from patching.patcher import Patcher
 
-GENERATIONS = 100
-POPULATION_SIZE = 20
+GENERATIONS = 500
+POPULATION_SIZE = 100
 
 
-class EvolutionaryPatterns(Patcher):
+def save_specimen(level: list[str], iteration: int):
+    with open(f"./levels/demo/ev_pat_examples/lvl_gen_{iteration}.txt", "w") as f:
+        for row in level:
+            f.write(row)
+            f.write("\n")
+
+
+class EvolutionaryPatternsVerbose(Patcher):
     """
     Uses an evolutionary algorithm to evolve a replacement section for the broken one.
     A specimen has <level_height> horizontal slices, which are the width of the broken section + 2 (+1 for each side).
@@ -27,8 +34,11 @@ class EvolutionaryPatterns(Patcher):
     ) -> list[str]:
         population = Population(level, original_level, broken_range)
 
-        for _ in range(GENERATIONS):
+        for i in range(1, GENERATIONS + 1):
             population.step()
+            if i % 100 == 0:
+                best = population.best_specimen()
+                save_specimen(["".join(row) for row in best], i)
 
         best = population.best_specimen()
         return [''.join(row) for row in best]

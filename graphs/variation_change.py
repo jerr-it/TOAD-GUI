@@ -8,7 +8,7 @@ sns.set_theme()
 metrics_df: pd.DataFrame = load_metrics_df()
 
 metrics_df = add_generator_column(metrics_df)
-metrics_df["variation_change"] = (metrics_df["Pattern variation fixed"] - metrics_df["Pattern variation generated"]).abs() * 100
+metrics_df["variation_change"] = (metrics_df["Pattern variation fixed"] - metrics_df["Pattern variation generated"]) * 100
 df = metrics_df[["generator", "patcher", "variation_change"]].copy()
 
 df = df.groupby(["generator", "patcher"]).mean().reset_index()

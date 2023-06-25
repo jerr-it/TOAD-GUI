@@ -337,7 +337,7 @@ def pipeline_repair_evaluate():
             start_counter = end_counter
             level_idx += 1
 
-            print(f"Completed level {level_idx} of {level_count} | ETA: {calculate_eta(times, level_count - level_idx)}")
+            print(f"Completed task {level_idx} of {level_count} | ETA: {calculate_eta(times, level_count - level_idx)}")
 
 
 start = time.time()

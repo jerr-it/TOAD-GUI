@@ -8,7 +8,7 @@ sns.set_theme()
 metrics_df: pd.DataFrame = load_metrics_df()
 
 metrics_df = add_generator_column(metrics_df)
-metrics_df["tpkl_change"] = (metrics_df["TPKL Original-Fixed"] - metrics_df["TPKL Original-Generated"]).abs()
+metrics_df["tpkl_change"] = (metrics_df["TPKL Original-Fixed"] - metrics_df["TPKL Original-Generated"])
 df = metrics_df[["generator", "patcher", "tpkl_change"]].copy()
 
 df = df.groupby(["generator", "patcher"]).mean().reset_index()

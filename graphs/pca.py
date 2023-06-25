@@ -11,9 +11,9 @@ metrics_df: pd.DataFrame = load_metrics_df()
 
 metrics_df["Runtime"] = metrics_df["Runtime"]
 metrics_df["Peak memory"] = metrics_df["Peak memory"]
-metrics_df["tpkl_change"] = (metrics_df["TPKL Original-Fixed"] - metrics_df["TPKL Original-Generated"]).abs()
-metrics_df["variation_change"] = (metrics_df["Pattern variation fixed"] - metrics_df["Pattern variation generated"]).abs()
-metrics_df["difficulty_change"] = (metrics_df["Difficulty fixed"] - metrics_df["Difficulty generated"]).abs()
+metrics_df["tpkl_change"] = (metrics_df["TPKL Original-Fixed"] - metrics_df["TPKL Original-Generated"])
+metrics_df["variation_change"] = (metrics_df["Pattern variation fixed"] - metrics_df["Pattern variation generated"])
+metrics_df["difficulty_change"] = (metrics_df["Difficulty fixed"] - metrics_df["Difficulty generated"])
 metrics_df["Tries"] = metrics_df["Tries"]
 
 y = metrics_df[["patcher"]].copy()

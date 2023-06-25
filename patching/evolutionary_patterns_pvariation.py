@@ -3,13 +3,14 @@ from __future__ import annotations
 import numpy as np
 import py4j.java_gateway
 
+from patching.metrics.pattern_variation import pattern_variation
 from patching.patcher import Patcher
 
 GENERATIONS = 100
 POPULATION_SIZE = 20
 
 
-class EvolutionaryPatterns(Patcher):
+class EvolutionaryPatternsPVariation(Patcher):
     """
     Uses an evolutionary algorithm to evolve a replacement section for the broken one.
     A specimen has <level_height> horizontal slices, which are the width of the broken section + 2 (+1 for each side).
@@ -41,9 +42,12 @@ class Population:
             original_level: list[str],
             broken_range: tuple[tuple[int, int], tuple[int, int]]
     ):
+        self.original_pattern_variation = pattern_variation(level)
+
         self.level = np.array([list(row) for row in level])
         self.generated_level = np.array([list(row) for row in level])
         self.original_level = np.array([list(row) for row in original_level])
+
         self.broken_range = broken_range
         x_range, y_range = broken_range
         self.slice_width = (x_range[1] - x_range[0]) + 2
@@ -81,20 +85,17 @@ class Population:
 
         # Mutate all specimens
         for specimen in self.population:
-            if np.random.rand() < 0.1:
+            if np.random.rand() < 0.5:
                 specimen.mutate(self.rng_slice())
 
     def evaluate(self, specimen: Specimen) -> float:
         x_range, y_range = self.broken_range
 
-        score = 0.0
-        for i, lslice in enumerate(specimen.slice_set):
-            if lslice[0] == self.generated_level[i][x_range[0]-1]:
-                score += 1.0
-            if lslice[lslice.shape[0]-1] == self.generated_level[i][x_range[1]+1]:
-                score += 1.0
+        for row in range(y_range[1]):
+            lslice = specimen.slice_set[row]
+            self.level[row, x_range[0]:x_range[1]] = lslice[1:lslice.shape[0]-1]
 
-        return score
+        return 1.0 / (1.0 + abs(pattern_variation(self.level) - self.original_pattern_variation))
 
     def best_specimen(self) -> np.ndarray:
         best: Specimen = self.population[0]
