@@ -17,16 +17,18 @@ col_averages = df.mean(axis=0)
 vmin = df.values.min()
 vmax = df.values.max()
 
-fig, axs = plt.subplots(2, 2, figsize=(10, 8), gridspec_kw={'width_ratios': [1, 0.2], 'height_ratios': [1, 0.2]})
+fig, axs = plt.subplots(2, 2, figsize=(10, 3), gridspec_kw={'width_ratios': [0.92, 0.08], 'height_ratios': [0.7, 0.3]})
 
-sns.heatmap(df, annot=True, cbar=False, ax=axs[0, 0], vmin=vmin, vmax=vmax)
-axs[0, 0].set_title('Tries (mean)')
+sns.heatmap(df, annot=True, cbar=False, ax=axs[0, 0], vmin=vmin, vmax=vmax, square=True)
+axs[0, 0].set_title('Share of unplayable levels')
+axs[0, 0].set_xlabel("Generator")
+axs[0, 0].set_ylabel("Agent")
 
-sns.heatmap(row_averages.to_frame(), annot=True, cbar=True, ax=axs[0, 1], vmin=vmin, vmax=vmax)
-axs[0, 1].set_title('Row Averages')
-axs[0, 1].set_ylabel("")
+sns.heatmap(row_averages.to_frame(), annot=True, cbar=True, ax=axs[0, 1], vmin=vmin, vmax=vmax, square=True)
+axs[0, 1].set_title('')
+axs[0, 1].set_ylabel("Row Averages")
 
-sns.heatmap(col_averages.to_frame().T, annot=True, cbar=False, ax=axs[1, 0], vmin=vmin, vmax=vmax)
+sns.heatmap(col_averages.to_frame().T, annot=True, cbar=False, ax=axs[1, 0], vmin=vmin, vmax=vmax, square=True)
 axs[1, 0].set_title('')
 axs[1, 0].set_xlabel("Column Averages")
 
