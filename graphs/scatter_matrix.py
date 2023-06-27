@@ -17,6 +17,7 @@ metrics_df["Tries"] = metrics_df["Tries"]
 df = metrics_df[["patcher", "tpkl_change", "variation_change", "difficulty_change", "runtime_per_try", "Peak memory"]].copy()
 
 with sns.color_palette("Paired"):
-    sns.pairplot(df, hue="patcher", markers=["8", "s", "p", "P", "h"])
+    g = sns.pairplot(df, hue="patcher", markers=["8", "s", "p", "P", "h", "D"])
+    g.map_lower(sns.kdeplot, levels=3, color=".2")
 
     plt.show()
