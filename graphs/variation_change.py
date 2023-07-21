@@ -12,6 +12,7 @@ metrics_df["variation_change"] = (metrics_df["Pattern variation fixed"] - metric
 df = metrics_df[["generator", "patcher", "variation_change"]].copy()
 
 df = df.groupby(["generator", "patcher"]).mean().reset_index()
+df["variation_change"] = df["variation_change"].abs()
 df = df.pivot(index="patcher", columns="generator", values="variation_change")
 
 row_averages = df.mean(axis=1)

@@ -38,6 +38,7 @@ axs[0, 1].set_xticks([])
 axs[0, 1].set_yticks([])
 axs[1, 1].set_xticks([])
 axs[1, 1].set_yticks([])
+axs[1, 1].axis("off")
 
 plt.tight_layout()
 

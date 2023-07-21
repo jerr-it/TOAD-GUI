@@ -24,6 +24,8 @@ fig, axs = plt.subplots(2, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [0.9
 
 sns.heatmap(df, annot=True, cbar=False, ax=axs[0, 0], vmin=vmin, vmax=vmax, square=True)
 axs[0, 0].set_title('Tries (mean)')
+axs[0, 0].set_xlabel("Generator")
+axs[0, 0].set_ylabel("Patcher")
 
 sns.heatmap(row_averages.to_frame(), annot=True, cbar=True, ax=axs[0, 1], vmin=vmin, vmax=vmax, square=True)
 axs[0, 1].set_title('Row Averages')

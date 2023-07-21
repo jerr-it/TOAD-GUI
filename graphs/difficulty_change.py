@@ -8,7 +8,7 @@ sns.set_theme()
 metrics_df: pd.DataFrame = load_metrics_df()
 
 metrics_df = add_generator_column(metrics_df)
-metrics_df["difficulty_change"] = (metrics_df["Difficulty fixed"] - metrics_df["Difficulty generated"]).abs()
+metrics_df["difficulty_change"] = (metrics_df["Difficulty fixed"] - metrics_df["Difficulty generated"])
 df = metrics_df[["generator", "patcher", "difficulty_change"]].copy()
 
 df = df.groupby(["generator", "patcher"]).mean().reset_index()
